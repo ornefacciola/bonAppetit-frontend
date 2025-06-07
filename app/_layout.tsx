@@ -22,9 +22,13 @@ export default function RootLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
-      <Stack.Screen name="welcome" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="+sorry" />
+      <Stack.Screen name="sorry" />
+      <Stack.Screen
+        name="modals/cargar-receta"
+        options={{ presentation: 'modal' }}
+      />
+
     </Stack>
   );
 }
