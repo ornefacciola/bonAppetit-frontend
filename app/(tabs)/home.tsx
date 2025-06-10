@@ -1,19 +1,97 @@
 // app/home.tsx
 import { Image } from 'expo-image';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    TextInput,
-    View,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  TextInput,
+  View,
 } from 'react-native';
 
+import RecipeCard from '@/components/receta/RecipeCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function HomeScreen() {
+  const [favoriteRecipes, setFavoriteRecipes] = useState<{
+    [key: string]: boolean;
+  }>({
+    "1": true, // Ensalada Caesar
+    "2": false, // Sopa de Lentejas
+    "3": true, // Pasta con Camarones
+    "4": false, // Tacos al Pastor
+    "5": true, // Curry de Pollo
+  });
+
+  const [categories, setCategories] = useState<{
+    id: string;
+    name: string;
+    iconUrl: string;
+  }[]>([]);
+
+  const [recentRecipes, setRecentRecipes] = useState<{
+    id: string;
+    title: string;
+    category: string;
+    author: string;
+    imageUrl: string;
+    rating: number;
+  }[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/categories');
+        const data = await response.json();
+        if (data.status === "success") {
+          setCategories(data.categories.map((cat: any) => ({ id: cat._id, name: cat.name, iconUrl: cat.iconUrl || '' })));
+        } else {
+          console.error("Failed to fetch categories:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    const fetchRecentRecipes = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/recipies?limit=3&sortBy=publishedDate&order=desc');
+        const data = await response.json();
+        if (data.status === "success") {
+          setRecentRecipes(data.payload.map((recipe: any) => ({
+            id: recipe._id,
+            title: recipe.title,
+            category: recipe.category,
+            author: recipe.user,
+            imageUrl: `http://localhost:8080${recipe.image_url}`,
+            rating: recipe.averageRating || 0,
+          })));
+        } else {
+          console.error("Failed to fetch recent recipes:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching recent recipes:", error);
+      }
+    };
+
+    fetchCategories();
+    fetchRecentRecipes();
+  }, []);
+
+  const handleCardPress = (id: string) => {
+    console.log(`Recipe card ${id} pressed`);
+    // Lógica para navegar a la pantalla de detalles de la receta
+  };
+
+  const handleToggleFavorite = (id: string) => {
+    setFavoriteRecipes((prevFavorites) => ({
+      ...prevFavorites,
+      [id]: !prevFavorites[id],
+    }));
+  };
+
   return (
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
@@ -45,9 +123,20 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            <View style={styles.cardPlaceholder} />
-            <View style={styles.cardPlaceholder} />
-            <View style={styles.cardPlaceholder} />
+            {recentRecipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                id={recipe.id}
+                title={recipe.title}
+                category={recipe.category}
+                author={recipe.author}
+                imageUrl={recipe.imageUrl}
+                rating={recipe.rating}
+                onPress={handleCardPress}
+                onToggleFavorite={handleToggleFavorite}
+                isFavorite={favoriteRecipes[recipe.id] || false}
+              />
+            ))}
           </ScrollView>
 
           {/* Section: Categorías */}
@@ -59,9 +148,14 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            <View style={styles.categoryPlaceholder} />
-            <View style={styles.categoryPlaceholder} />
-            <View style={styles.categoryPlaceholder} />
+            {categories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                title={category.name}
+                imageUrl={category.iconUrl}
+                onPress={() => console.log(`Category ${category.name} pressed`)}
+              />
+            ))}
           </ScrollView>
 
           {/* Section: Tus favoritas */}
@@ -73,8 +167,28 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            <View style={styles.cardPlaceholder} />
-            <View style={styles.cardPlaceholder} />
+            <RecipeCard
+              id="4"
+              title="Tacos al Pastor"
+              category="Saludable"
+              author="mexicanfoodie"
+              imageUrl="https://images.unsplash.com/photo-1612876800057-0a2a1b9b0b0f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+              rating={4.8}
+              onPress={handleCardPress}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorite={favoriteRecipes["4"]}
+            />
+            <RecipeCard
+              id="5"
+              title="Curry de Pollo"
+              category="Carnes"
+              author="spicelover"
+              imageUrl="https://images.unsplash.com/photo-1596766432619-5a1e2f7c0a6b?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+              rating={4.6}
+              onPress={handleCardPress}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorite={favoriteRecipes["5"]}
+            />
           </ScrollView>
         </ScrollView>
       </ThemedView>
@@ -116,19 +230,5 @@ const styles = StyleSheet.create({
   horizontalScroll: {
     paddingBottom: 16,
     marginBottom: 24,
-  },
-  cardPlaceholder: {
-    width: 140,
-    height: 140,
-    borderRadius: 8,
-    backgroundColor: '#E0E0E0',
-    marginRight: 12,
-  },
-  categoryPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E0E0E0',
-    marginRight: 12,
   },
 });
