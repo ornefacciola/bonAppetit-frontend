@@ -58,7 +58,7 @@ export default function TabLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="smiley" color={color} />
+            <Ionicons size={28} name="person-circle-outline" color={color} />
           ),
         }}
       />
