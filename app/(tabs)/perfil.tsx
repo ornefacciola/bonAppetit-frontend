@@ -25,19 +25,23 @@ export default function PerfilScreen() {
 
           <View style={styles.optionsContainer}>
               {/* Opción 1: Publicadas */}
-              <TouchableOpacity style={styles.optionRow} >
-                  <View style={styles.optionLeft}>
-                      <MaterialCommunityIcons name="chef-hat" size={20} color="black" />
-                      <Text style={styles.optionText}>Mis recetas publicadas</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="black" />
+              <TouchableOpacity
+                style={styles.optionRow}
+                onPress={() => router.push('/recetas-publicadas')}
+              >
+                <View style={styles.optionLeft}>
+                  <MaterialCommunityIcons name="chef-hat" size={20} color="black" />
+                  <Text style={styles.optionText}>Mis recetas publicadas</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="black" />
               </TouchableOpacity>
 
               {/* Línea */}
               <View style={styles.divider} />
 
               {/* Opción 2: Pendientes */}
-              <TouchableOpacity style={styles.optionRow}>
+              <TouchableOpacity style={styles.optionRow}
+                onPress={() => router.push('/recetas-pendientes')}>
                   <View style={styles.optionLeft}>
                       <MaterialCommunityIcons name="clipboard-clock-outline" size={20} color="black" />
                       <Text style={styles.optionText}>Recetas pendientes de aprobación</Text>

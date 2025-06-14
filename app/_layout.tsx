@@ -24,6 +24,8 @@ export default function RootLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="sorry" />
+      <Stack.Screen name="recetas-publicadas" />
+      <Stack.Screen name="recetas-pendientes" />
       <Stack.Screen
         name="modals/cargar-receta"
         options={{ presentation: 'modal' }}

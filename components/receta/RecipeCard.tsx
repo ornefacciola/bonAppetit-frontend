@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons'; // Para el icono de corazón y estrella
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -12,6 +12,7 @@ interface RecipeCardProps {
   onPress: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   isFavorite: boolean;
+  variant?: 'default' | 'compact';
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -24,10 +25,19 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   onPress,
   onToggleFavorite,
   isFavorite,
+  variant = 'default', // valor por defecto
 }) => {
+  const isCompact = variant === 'compact';
+
   return (
-    <TouchableOpacity style={styles.card} onPress={() => onPress(id)}>
-      <Image source={{ uri: imageUrl }} style={styles.image} />
+    <TouchableOpacity
+      style={[styles.card, isCompact && styles.cardCompact]}
+      onPress={() => onPress(id)}
+    >
+      <Image
+        source={{ uri: imageUrl }}
+        style={[styles.image, isCompact && styles.imageCompact]}
+      />
       <TouchableOpacity
         style={styles.favoriteButton}
         onPress={() => onToggleFavorite(id)}
@@ -59,19 +69,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 16,
-    elevation: 3, // For Android shadow
-    shadowColor: '#000', // For iOS shadow
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     overflow: 'hidden',
-    width: 280, // Ancho fijo para las tarjetas
+    width: 280,
+  },
+  cardCompact: {
+    width: '100%',         // ocupa todo el ancho disponible
+    alignSelf: 'center',   // centrar si está en columna
   },
   image: {
     width: '100%',
     height: 180,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
+  },
+  imageCompact: {
+    height: 140, // más bajo para compacta
   },
   favoriteButton: {
     position: 'absolute',
@@ -80,6 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: 20,
     padding: 6,
+    zIndex: 1,
   },
   content: {
     padding: 16,
@@ -94,7 +112,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#333',
-    flexShrink: 1, // Permite que el título se encoja si es largo
+    flexShrink: 1,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -122,4 +140,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecipeCard; 
+export default RecipeCard;
