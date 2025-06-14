@@ -4,16 +4,14 @@ import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StatusBar,
-  StyleSheet,
-  TextInput,
-  View,
+  StyleSheet
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { CategoryCard } from '@/components/ui/CategoryCard';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { SearchBar } from '@/components/ui/SearchBar';
 
 export default function HomeScreen() {
   const [favoriteRecipes, setFavoriteRecipes] = useState<{
@@ -40,6 +38,8 @@ export default function HomeScreen() {
     imageUrl: string;
     rating: number;
   }[]>([]);
+
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -104,14 +104,10 @@ export default function HomeScreen() {
         />
 
         {/* Search bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar recetas, usuarios e ingredientes"
-            placeholderTextColor="#9E9E9E"
-          />
-          <IconSymbol name="magnifyingglass" size={20} color="#9E9E9E" />
-        </View>
+        <SearchBar 
+          value={searchText}
+          onChangeText={setSearchText}
+        />
 
         <ScrollView>
           {/* Section: Recetas recién agregadas */}

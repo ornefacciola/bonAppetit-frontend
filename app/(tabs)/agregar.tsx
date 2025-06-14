@@ -1,23 +1,24 @@
 // app/(tabs)/agregar.tsx
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { SearchBar } from '@/components/ui/SearchBar';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-const router = useRouter();
-
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
+const router = useRouter();
+
 export default function Agregar() {
+  const [searchText, setSearchText] = useState('');
+
   return (
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
@@ -29,15 +30,10 @@ export default function Agregar() {
           contentFit="contain"
         />
 
-        {/* Search bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar recetas, usuarios e ingredientes"
-            placeholderTextColor="#9E9E9E"
-          />
-          <IconSymbol name="magnifyingglass" size={20} color="#9E9E9E" />
-        </View>
+        <SearchBar 
+          value={searchText}
+          onChangeText={setSearchText}
+        />
 
         {/* Botón */}
         <TouchableOpacity
