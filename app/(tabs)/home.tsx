@@ -44,7 +44,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/categories');
+        const response = await fetch('https://bon-appetit-production.up.railway.app/api/categories');
         const data = await response.json();
         if (data.status === "success") {
           setCategories(data.categories.map((cat: any) => ({ id: cat._id, name: cat.name, iconUrl: cat.iconUrl || '' })));
@@ -57,7 +57,7 @@ export default function HomeScreen() {
     };
     const fetchRecentRecipes = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/recipies?limit=3&sortBy=publishedDate&order=desc');
+        const response = await fetch('https://bon-appetit-production.up.railway.app/api/recipies?limit=3&sortBy=publishedDate&order=desc');
         const data = await response.json();
         if (data.status === "success") {
           setRecentRecipes(data.payload.map((recipe: any) => ({
@@ -65,7 +65,7 @@ export default function HomeScreen() {
             title: recipe.title,
             category: recipe.category,
             author: recipe.user,
-            imageUrl: `http://localhost:8080${recipe.image_url}`,
+            imageUrl: `https://bon-appetit-production.up.railway.app${recipe.image_url}`,
             rating: recipe.averageRating || 0,
           })));
         } else {
