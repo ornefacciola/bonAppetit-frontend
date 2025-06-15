@@ -65,7 +65,7 @@ export default function HomeScreen() {
             title: recipe.title,
             category: recipe.category,
             author: recipe.user,
-            imageUrl: `https://bon-appetit-production.up.railway.app${recipe.image_url}`,
+            imageUrl: recipe.image_url,
             rating: recipe.averageRating || 0,
           })));
         } else {

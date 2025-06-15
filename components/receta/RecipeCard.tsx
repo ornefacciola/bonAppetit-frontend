@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface RecipeCardProps {
   id: string;
@@ -50,6 +51,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       <Image
         source={{ uri: imageUrl }}
         style={[styles.image, isCompact && styles.imageCompact]}
+        contentFit="cover"
       />
       <TouchableOpacity
         style={styles.favoriteButton}
