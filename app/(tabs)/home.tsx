@@ -128,7 +128,6 @@ export default function HomeScreen() {
                 author={recipe.author}
                 imageUrl={recipe.imageUrl}
                 rating={recipe.rating}
-                onPress={handleCardPress}
                 onToggleFavorite={handleToggleFavorite}
                 isFavorite={favoriteRecipes[recipe.id] || false}
               />
@@ -170,7 +169,6 @@ export default function HomeScreen() {
               author="mexicanfoodie"
               imageUrl="https://images.unsplash.com/photo-1612876800057-0a2a1b9b0b0f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               rating={4.8}
-              onPress={handleCardPress}
               onToggleFavorite={handleToggleFavorite}
               isFavorite={favoriteRecipes["4"]}
             />
@@ -181,7 +179,6 @@ export default function HomeScreen() {
               author="spicelover"
               imageUrl="https://images.unsplash.com/photo-1596766432619-5a1e2f7c0a6b?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               rating={4.6}
-              onPress={handleCardPress}
               onToggleFavorite={handleToggleFavorite}
               isFavorite={favoriteRecipes["5"]}
             />

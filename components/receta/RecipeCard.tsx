@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -9,7 +10,7 @@ interface RecipeCardProps {
   author: string;
   imageUrl: string;
   rating: number;
-  onPress: (id: string) => void;
+  onPress?: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   isFavorite: boolean;
   variant?: 'default' | 'compact';
@@ -27,12 +28,24 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isFavorite,
   variant = 'default', // valor por defecto
 }) => {
+  const router = useRouter();
   const isCompact = variant === 'compact';
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress(id);
+    } else {
+      router.push({
+        pathname: '/receta/[id]',
+        params: { id }
+      } as any);
+    }
+  };
 
   return (
     <TouchableOpacity
       style={[styles.card, isCompact && styles.cardCompact]}
-      onPress={() => onPress(id)}
+      onPress={handlePress}
     >
       <Image
         source={{ uri: imageUrl }}
