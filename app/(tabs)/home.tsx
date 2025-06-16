@@ -1,19 +1,23 @@
 // app/home.tsx
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StatusBar,
-  StyleSheet
+  StyleSheet,
+  Text,
+  TouchableOpacity
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { CategoryCard } from '@/components/ui/CategoryCard';
-import { SearchBar } from '@/components/ui/SearchBar';
+import { IconSymbol } from '../../components/ui/IconSymbol';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [favoriteRecipes, setFavoriteRecipes] = useState<{
     [key: string]: boolean;
   }>({
@@ -38,8 +42,6 @@ export default function HomeScreen() {
     imageUrl: string;
     rating: number;
   }[]>([]);
-
-  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -104,10 +106,11 @@ export default function HomeScreen() {
         />
 
         {/* Search bar */}
-        <SearchBar 
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+        <TouchableOpacity style={styles.searchContainer} onPress={() => router.push('/search')}>
+          <Text style={styles.searchText}>Busca recetas por nombre, ingrediente o usuario</Text>
+          <IconSymbol name="magnifyingglass" size={20} color="#9E9E9E" />
+        </TouchableOpacity>
+
 
         <ScrollView>
           {/* Section: Recetas recién agregadas */}
@@ -205,15 +208,19 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F2',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
     marginBottom: 32,
   },
-  searchInput: {
+  searchText: {
     flex: 1,
-    marginRight: 8,
+    color: '#9E9E9E',
   },
   sectionHeader: {
     color: '#025E45',
