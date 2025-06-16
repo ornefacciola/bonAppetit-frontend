@@ -111,7 +111,7 @@ export default function RecipePage() {
   console.log('Recipe stepsList:', recipe.stepsList);
 
   return (
-    <ScrollView style={{ backgroundColor: '#fff' }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: '#F6F6F6' }} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Header with centered logo */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#F6F6F6',
   },
   backButton: {
     width: 28,
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   favoriteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fff',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   ingredientBox: {
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#FFF',
     borderRadius: 10,
     marginHorizontal: 16,
     padding: 12,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   stepBox: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#FFF',
     borderRadius: 10,
     padding: 12,
   },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   commentBox: {
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#FFF',
     borderRadius: 10,
     marginHorizontal: 16,
     padding: 12,

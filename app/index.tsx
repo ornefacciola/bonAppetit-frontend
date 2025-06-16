@@ -52,7 +52,7 @@ export default function PrincipalScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F6F6F6',
     paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',

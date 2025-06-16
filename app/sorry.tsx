@@ -39,7 +39,7 @@ export default function SorryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F6F6F6',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,

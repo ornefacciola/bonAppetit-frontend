@@ -181,7 +181,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F6F6F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     height: 48,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFF',
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom:20,
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F2',
+    backgroundColor: '#FFF',
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,

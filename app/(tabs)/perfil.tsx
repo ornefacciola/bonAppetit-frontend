@@ -8,7 +8,7 @@ export default function PerfilScreen() {
   const usuario = 'paulinacocina';
 
   return (
-    <><View style={styles.container}>
+    <><View style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
           {/* Header */}
           <View style={styles.profileHeader}>
               <View style={styles.avatarIcon}>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 64,
     paddingHorizontal: 24,
-    backgroundColor: 'white',
+    backgroundColor: '#F6F6F6',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -121,7 +121,7 @@ logoutWrapper: {
   paddingHorizontal: 24,
   paddingTop: 16,
   paddingBottom: 32, // espacio antes del tab bar
-  backgroundColor: '#fff',
+  backgroundColor: '#F6F6F6',
 },
 
 logoutButton: {

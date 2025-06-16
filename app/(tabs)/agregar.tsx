@@ -22,7 +22,7 @@ export default function Agregar() {
   return (
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
         {/* Logo */}
         <Image
           source={require('@/assets/images/bon-appetit-logo.svg')}
