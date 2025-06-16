@@ -13,28 +13,54 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
 export default function LoginScreen() {
+  const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState('')
 
   const [emailValid, setEmailValid] = useState(true);
 
   const validateEmail = (e: string) => /\S+@\S+\.\S+/.test(e);
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!validateEmail(email)) {
       setEmailValid(false);
       return;
     }
-    router.replace('/(tabs)/home');
-  };
+  
+    try {
+      const response = await fetch('https://bon-appetit-production.up.railway.app/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        await login(data.token);
+        router.replace('/(tabs)/home');
+      } else {
+        setError(data.error || data.message || 'Login failed');
+      }
+    } catch (error) {
+      setError('Server Error, please try again')
+    }
+  }
 
   return (
     <>
@@ -94,7 +120,11 @@ export default function LoginScreen() {
               <Ionicons name={secure ? 'eye-off' : 'eye'} size={24} color="#9E9E9E" />
             </Pressable>
           </View>
-
+          {error && (
+            <ThemedText style={styles.generalErrorMessage}>
+              {error}
+            </ThemedText>
+          )}
           <Pressable style={styles.button} onPress={onSubmit}>
             <ThemedText type="defaultSemiBold" style={styles.buttonText}>
               Ir &gt;
@@ -199,6 +229,12 @@ const styles = StyleSheet.create({
     left: 12,    
     color: 'red',
     fontSize:11,
+  },
+  generalErrorMessage: {
+    color: 'red',
+    fontSize: 11,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   passwordContainer: {
     flexDirection: 'row',

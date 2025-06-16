@@ -1,3 +1,4 @@
+import { AuthProvider } from '@/contexts/AuthContext';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import 'react-native-reanimated';
@@ -15,6 +16,7 @@ export default function RootLayout() {
   }
 
   return (
+    <AuthProvider>
     <Stack
       screenOptions={{
         headerShown: false,  
@@ -32,6 +34,7 @@ export default function RootLayout() {
         options={{ presentation: 'modal' }}
       />
 
-    </Stack>
+      </Stack>
+    </AuthProvider>
   );
 }
