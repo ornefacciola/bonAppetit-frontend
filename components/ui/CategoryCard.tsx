@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#E0E0E0', // Placeholder background
+    backgroundColor: '#F6F6F6', // Placeholder background
     marginBottom: 8,
   },
   title: {
