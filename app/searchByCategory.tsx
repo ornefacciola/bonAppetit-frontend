@@ -20,7 +20,6 @@ export default function SearchByCategoryScreen() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [favoriteRecipes, setFavoriteRecipes] = useState<{ [key: string]: boolean }>({});
-  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -71,21 +70,17 @@ export default function SearchByCategoryScreen() {
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ThemedView style={styles.container}>
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/home')}
-          activeOpacity={0.7}
-          style={{ alignSelf: 'center', marginBottom: 24 }}
-        >
+        <TouchableOpacity onPress={() => router.push('/(tabs)/home')} activeOpacity={0.7} style={{alignSelf: 'center'}}>
           <Image
             source={require('@/assets/images/bon-appetit-logo.svg')}
             style={styles.logo}
             contentFit="contain"
           />
         </TouchableOpacity>
-        <SearchBar 
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+        <TouchableOpacity style={styles.searchContainer} onPress={() => router.push('/search')}>
+          <Text style={styles.searchText}>Busca recetas por nombre, ingrediente o usuario</Text>
+          <IconSymbol name="magnifyingglass" size={20} color="#9E9E9E" />
+        </TouchableOpacity>
 
         {/* Sección de Categorías (idéntica a home.tsx) */}
         <ThemedText type="defaultSemiBold" style={styles.sectionHeader}>Categorías</ThemedText>
