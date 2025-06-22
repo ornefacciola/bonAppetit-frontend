@@ -1,0 +1,188 @@
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Text, StatusBar, FlatList } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { CategoryCard } from '@/components/ui/CategoryCard';
+import RecipeCard from '@/components/receta/RecipeCard';
+import { AppLogo } from '@/components/ui/AppLogo';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { Image } from 'expo-image';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+
+export default function SearchByCategoryScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const initialCategory = params.category as string | undefined;
+
+  const [categories, setCategories] = useState<{ id: string; name: string; iconUrl: string }[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory || null);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [favoriteRecipes, setFavoriteRecipes] = useState<{ [key: string]: boolean }>({});
+  const [searchText, setSearchText] = useState('');
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('https://bon-appetit-production.up.railway.app/api/categories');
+        const data = await response.json();
+        if (data.status === 'success') {
+          setCategories(data.categories.map((cat: any) => ({ id: cat._id, name: cat.name, iconUrl: cat.iconUrl || '' })));
+        }
+      } catch (error) {
+        // handle error
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      setLoading(true);
+      fetch(`https://bon-appetit-production.up.railway.app/api/recipies?category=${encodeURIComponent(selectedCategory)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            setRecipes(data.payload.map((recipe: any) => ({
+              id: recipe._id,
+              title: recipe.title,
+              category: recipe.category,
+              author: recipe.user,
+              imageUrl: recipe.image_url,
+              rating: recipe.averageRating || 0,
+            })));
+          } else {
+            setRecipes([]);
+          }
+        })
+        .catch(() => setRecipes([]))
+        .finally(() => setLoading(false));
+    } else {
+      setRecipes([]);
+    }
+  }, [selectedCategory]);
+
+  const handleToggleFavorite = (id: string) => {
+    setFavoriteRecipes((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  return (
+    <>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <ThemedView style={styles.container}>
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/home')}
+          activeOpacity={0.7}
+          style={{ alignSelf: 'center', marginBottom: 24 }}
+        >
+          <Image
+            source={require('@/assets/images/bon-appetit-logo.svg')}
+            style={styles.logo}
+            contentFit="contain"
+          />
+        </TouchableOpacity>
+        <SearchBar 
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+
+        {/* Sección de Categorías (idéntica a home.tsx) */}
+        <ThemedText type="defaultSemiBold" style={styles.sectionHeader}>Categorías</ThemedText>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalScroll}
+          style={{ maxHeight: 140 }}
+        >
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.id}
+              title={category.name}
+              imageUrl={category.iconUrl}
+              onPress={() => setSelectedCategory(category.name)}
+            />
+          ))}
+        </ScrollView>
+
+        {/* Resultados de recetas */}
+        {selectedCategory && (
+          <ThemedText style={styles.resultsText}>{recipes.length} Resultados</ThemedText>
+        )}
+
+        {/* FlatList SOLO para recetas, nunca envuelve categorías */}
+        <FlatList
+          data={loading ? [] : recipes}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <RecipeCard
+              key={item.id}
+              id={item.id}
+              title={item.title}
+              category={item.category}
+              author={item.author}
+              imageUrl={item.imageUrl}
+              rating={item.rating}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorite={favoriteRecipes[item.id] || false}
+              variant="compact"
+            />
+          )}
+          ListEmptyComponent={loading ? (
+            <Text style={{ textAlign: 'center', marginTop: 32 }}>Cargando recetas...</Text>
+          ) : null}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+        />
+      </ThemedView>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F6F6F6',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+  },
+  logo: {
+    width: 150,
+    height: 72,
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 32,
+  },
+  searchText: {
+    flex: 1,
+    color: '#9E9E9E',
+  },
+  sectionHeader: {
+    color: '#025E45',
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  horizontalScroll: {
+    paddingBottom: 16,
+    marginBottom: 24,
+  },
+  resultsText: {
+    color: '#025E45',
+    fontSize: 15,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+}); 

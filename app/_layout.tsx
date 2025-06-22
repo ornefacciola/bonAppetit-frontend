@@ -34,6 +34,7 @@ export default function RootLayout() {
         name="modals/cargar-receta"
         options={{ presentation: 'modal' }}
       />
+      <Stack.Screen name="searchByCategory" />
 
       </Stack>
     </AuthProvider>

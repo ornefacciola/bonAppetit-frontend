@@ -151,7 +151,7 @@ export default function HomeScreen() {
                 key={category.id}
                 title={category.name}
                 imageUrl={category.iconUrl}
-                onPress={() => console.log(`Category ${category.name} pressed`)}
+                onPress={() => router.push({ pathname: '/searchByCategory', params: { category: category.name } })}
               />
             ))}
           </ScrollView>
