@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, Text, StatusBar, FlatList } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import { CategoryCard } from '@/components/ui/CategoryCard';
 import RecipeCard from '@/components/receta/RecipeCard';
-import { AppLogo } from '@/components/ui/AppLogo';
-import { SearchBar } from '@/components/ui/SearchBar';
-import { Image } from 'expo-image';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { FlatList, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export default function SearchByCategoryScreen() {
   const router = useRouter();
@@ -96,6 +94,7 @@ export default function SearchByCategoryScreen() {
               title={category.name}
               imageUrl={category.iconUrl}
               onPress={() => setSelectedCategory(category.name)}
+              selected={selectedCategory === category.name}
             />
           ))}
         </ScrollView>
