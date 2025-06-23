@@ -47,6 +47,5 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginRight: 8,
-    outlineStyle: 'none',
   },
 }); 

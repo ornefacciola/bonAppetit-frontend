@@ -35,6 +35,7 @@ export default function RootLayout() {
         options={{ presentation: 'modal' }}
       />
       <Stack.Screen name="searchByCategory" />
+      <Stack.Screen name="forgotPasswordScreen" />
 
       </Stack>
     </AuthProvider>

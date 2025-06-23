@@ -86,7 +86,7 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <TextInput
             style={[styles.input, !emailValid && styles.inputError]}
-            placeholder="ejemplo@gmail.com"
+            placeholder="ejemplo@bonappetit.com"
             placeholderTextColor="#9E9E9E"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -131,7 +131,7 @@ export default function LoginScreen() {
             </ThemedText>
           </Pressable>
 
-          <Pressable onPress={() => {/* TODO: forgot password */}}>
+          <Pressable onPress={() => router.push('/forgotPasswordScreen')}>
             <ThemedText type="link" style={styles.forgot}>
               Olvidaste tu contraseña?
             </ThemedText>
