@@ -237,7 +237,7 @@ export default function SearchScreen() {
                     )}
                     <ScrollView
                         style={{ flex: 1 }}
-                        contentContainerStyle={{ paddingBottom: 32 }}
+                        contentContainerStyle={{ paddingBottom: 100 }}
                         keyboardShouldPersistTaps="handled"
                     >
                         {results.length > 0 ? (

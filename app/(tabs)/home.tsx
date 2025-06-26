@@ -7,7 +7,8 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
@@ -186,6 +187,7 @@ export default function HomeScreen() {
               isFavorite={favoriteRecipes["5"]}
             />
           </ScrollView>
+          <View style={{ height: 32 }} />
         </ScrollView>
       </ThemedView>
     </>

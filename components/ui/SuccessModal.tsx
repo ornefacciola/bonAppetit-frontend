@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
     Modal,
@@ -7,97 +8,95 @@ import {
     View
 } from 'react-native';
 
-interface Props {
+interface SuccessModalProps {
   visible: boolean;
   onClose: () => void;
+  title: string;
+  message: string;
 }
 
-export default function SuccessModal({ visible, onClose }: Props) {
+const SuccessModal: React.FC<SuccessModalProps> = ({ visible, onClose, title, message }) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          <TouchableOpacity onPress={onClose} style={styles.close}>
-            <Text style={{ fontSize: 20 }}>✕</Text>
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <Ionicons name="close" size={28} color="#333" />
           </TouchableOpacity>
-
-          <View style={styles.iconContainer}>
-            <View style={styles.checkIcon}>
-              <Text style={styles.checkText}>✔</Text>
+          <View style={styles.centeredContent}>
+            <View style={styles.successIconContainer}>
+              <Ionicons name="checkmark-circle" size={64} color="#8BC34A" />
             </View>
+            <Text style={styles.successTitle}>{title}</Text>
+            <Text style={styles.successMsg}>{message}</Text>
+            <TouchableOpacity style={styles.successBtn} onPress={onClose}>
+              <Text style={styles.successBtnText}>Continuar</Text>
+            </TouchableOpacity>
           </View>
-
-          <Text style={styles.title}>¡Bien hecho!</Text>
-          <Text style={styles.message}>
-            Tu receta está pendiente de aprobación{'\n'}
-            Puedes verla en tu perfil
-          </Text>
-
-          <TouchableOpacity style={styles.button} onPress={onClose}>
-            <Text style={styles.buttonText}>Continuar</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
-}
+};
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: '#00000099',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modal: {
-    width: '85%',
+    width: '90%',
+    maxWidth: 400,
     backgroundColor: '#F6F6F6',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 24,
     alignItems: 'center',
     position: 'relative',
   },
-  close: {
+  closeBtn: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 16,
+    right: 16,
+    zIndex: 2,
   },
-  iconContainer: {
-    marginBottom: 20,
+  centeredContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    minHeight: 180,
   },
-  checkIcon: {
-    backgroundColor: '#8BC34A',
-    borderRadius: 50,
-    width: 72,
-    height: 72,
+  successIconContainer: {
+    marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkText: {
-    fontSize: 36,
-    color: 'white',
+  successTitle: {
+    fontSize: 22,
     fontWeight: 'bold',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: '#222',
+    textAlign: 'center',
     marginBottom: 8,
   },
-  message: {
-    textAlign: 'center',
+  successMsg: {
+    fontSize: 16,
     color: '#333',
-    marginBottom: 24,
-    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  button: {
+  successBtn: {
     backgroundColor: '#8BC34A',
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 32,
+    alignItems: 'center',
   },
-  buttonText: {
-    color: 'white',
+  successBtnText: {
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },
 });
+
+export default SuccessModal;

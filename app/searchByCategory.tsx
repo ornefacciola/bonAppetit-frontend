@@ -126,7 +126,7 @@ export default function SearchByCategoryScreen() {
             <Text style={{ textAlign: 'center', marginTop: 32 }}>Cargando recetas...</Text>
           ) : null}
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         />
       </ThemedView>

@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   scroll: {
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
 });

@@ -1,8 +1,10 @@
 import { AuthProvider } from '@/contexts/AuthContext';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
 import 'react-native-reanimated';
 
+import { GlobalBottomBar } from '@/components/GlobalBottomBar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
@@ -17,27 +19,29 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-    <Stack
-      screenOptions={{
-        headerShown: false,  
-      }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="sorry" />
-      <Stack.Screen name="search" />
-      <Stack.Screen name="recetas-publicadas" />
-      <Stack.Screen name="recetas-pendientes" />
-      <Stack.Screen name="receta/[id]" />
-      <Stack.Screen
-        name="modals/cargar-receta"
-        options={{ presentation: 'modal' }}
-      />
-      <Stack.Screen name="searchByCategory" />
-      <Stack.Screen name="forgotPasswordScreen" />
-
-      </Stack>
+      <View style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,  
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="sorry" />
+          <Stack.Screen name="search" />
+          <Stack.Screen name="recetas-publicadas" />
+          <Stack.Screen name="recetas-pendientes" />
+          <Stack.Screen name="receta/[id]" />
+          <Stack.Screen
+            name="modals/cargar-receta"
+            options={{ presentation: 'modal' }}
+          />
+          <Stack.Screen name="searchByCategory" />
+          <Stack.Screen name="forgotPasswordScreen" />
+        </Stack>
+        <GlobalBottomBar />
+      </View>
     </AuthProvider>
   );
 }

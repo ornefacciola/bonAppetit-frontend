@@ -67,6 +67,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   scroll: {
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
 });
