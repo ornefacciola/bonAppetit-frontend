@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -6,13 +7,15 @@ import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const ACTIVE_COLOR = '#055B49';
-const INACTIVE_COLOR = '#888';
-
 export function GlobalBottomBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { token } = useAuth();
+
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const ACTIVE_COLOR = isDark ? '#fff' : '#055B49';
+  const INACTIVE_COLOR = isDark ? '#fff' : '#888';
 
   // Only show if user is authenticated
   if (!token) return null;
@@ -73,7 +76,7 @@ export function GlobalBottomBar() {
           size={isActive('home') ? 22 : 18}
           color={isActive('home') ? ACTIVE_COLOR : INACTIVE_COLOR}
         />
-        <Text style={[styles.tabLabel, isActive('home') && styles.tabLabelActive]}>Inicio</Text>
+        <Text style={[styles.tabLabel, isActive('home') && styles.tabLabelActive, { color: isActive('home') ? ACTIVE_COLOR : INACTIVE_COLOR }]}>Inicio</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tab} onPress={() => handleTabPress('agregar')}>
         <Ionicons
@@ -81,7 +84,7 @@ export function GlobalBottomBar() {
           size={isActive('agregar') ? 22 : 18}
           color={isActive('agregar') ? ACTIVE_COLOR : INACTIVE_COLOR}
         />
-        <Text style={[styles.tabLabel, isActive('agregar') && styles.tabLabelActive]}>Agregar</Text>
+        <Text style={[styles.tabLabel, isActive('agregar') && styles.tabLabelActive, { color: isActive('agregar') ? ACTIVE_COLOR : INACTIVE_COLOR }]}>Agregar</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tab} onPress={() => handleTabPress('favoritos')}>
         <Ionicons
@@ -89,7 +92,7 @@ export function GlobalBottomBar() {
           size={isActive('favoritos') ? 22 : 18}
           color={isActive('favoritos') ? ACTIVE_COLOR : INACTIVE_COLOR}
         />
-        <Text style={[styles.tabLabel, isActive('favoritos') && styles.tabLabelActive]}>Favoritos</Text>
+        <Text style={[styles.tabLabel, isActive('favoritos') && styles.tabLabelActive, { color: isActive('favoritos') ? ACTIVE_COLOR : INACTIVE_COLOR }]}>Favoritos</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tab} onPress={() => handleTabPress('perfil')}>
         <Ionicons
@@ -97,7 +100,7 @@ export function GlobalBottomBar() {
           size={isActive('perfil') ? 22 : 18}
           color={isActive('perfil') ? ACTIVE_COLOR : INACTIVE_COLOR}
         />
-        <Text style={[styles.tabLabel, isActive('perfil') && styles.tabLabelActive]}>Perfil</Text>
+        <Text style={[styles.tabLabel, isActive('perfil') && styles.tabLabelActive, { color: isActive('perfil') ? ACTIVE_COLOR : INACTIVE_COLOR }]}>Perfil</Text>
       </TouchableOpacity>
     </View>
   );
@@ -129,10 +132,8 @@ const styles = StyleSheet.create({
     fontSize: 9,
     marginTop: 1,
     fontWeight: '400',
-    color: INACTIVE_COLOR,
   },
   tabLabelActive: {
-    color: ACTIVE_COLOR,
     fontWeight: 'bold',
   },
 }); 
