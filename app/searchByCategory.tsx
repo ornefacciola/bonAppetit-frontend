@@ -1,10 +1,11 @@
 import RecipeCard from '@/components/receta/RecipeCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { AppLogo } from '@/components/ui/AppLogo';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { OrderModal } from '@/components/ui/OrderModal';
-import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -79,13 +80,16 @@ export default function SearchByCategoryScreen() {
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ThemedView style={styles.container}>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/home')} activeOpacity={0.7} style={{alignSelf: 'center'}}>
-          <Image
-            source={require('@/assets/images/bon-appetit-logo.svg')}
-            style={styles.logo}
-            contentFit="contain"
-          />
-        </TouchableOpacity>
+        {/* Header con logo y flecha en la misma línea */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="#025E45" />
+          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <AppLogo width={150} height={72} style={{ alignSelf: 'center' }} />
+          </View>
+          <View style={{ width: 28 }} />
+        </View>
         <TouchableOpacity style={styles.searchContainer} onPress={() => router.push('/search')}>
           <Text style={styles.searchText}>Busca recetas por nombre, ingrediente o usuario</Text>
           <IconSymbol name="magnifyingglass" size={20} color="#9E9E9E" />
@@ -162,13 +166,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F6F6',
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 0,
   },
-  logo: {
-    width: 150,
-    height: 72,
-    alignSelf: 'center',
-    marginBottom: 24,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 24,
+    marginBottom: 12,
+  },
+  backButton: {
+    width: 28,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
