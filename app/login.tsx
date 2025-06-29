@@ -1,3 +1,4 @@
+//app/login.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -127,7 +128,7 @@ export default function LoginScreen() {
           )}
           <Pressable style={styles.button} onPress={onSubmit}>
             <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-              Ir &gt;
+              Ir
             </ThemedText>
           </Pressable>
 
