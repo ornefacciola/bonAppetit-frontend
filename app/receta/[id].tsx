@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
@@ -68,6 +68,9 @@ export default function RecipePage() {
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [customBaseIngredients, setCustomBaseIngredients] = useState<Ingredient[] | null>(null);
+  const [baseIngredients, setBaseIngredients] = useState<Ingredient[]>([]);
+  const [basePortions, setBasePortions] = useState<number>(1);
+  const screenWidth = Dimensions.get('window').width;
 
   // Safe back navigation
   const handleBack = () => {
@@ -118,13 +121,28 @@ export default function RecipePage() {
     }
   }, [recipe, isPersonalized]);
 
+  // On recipe load, set base ingredients and portions
+  useEffect(() => {
+    if (recipe) {
+      setBaseIngredients(recipe.ingredients.map(ing => ({ ...ing })));
+      setBasePortions(recipe.portions || 1);
+      setPortions(recipe.portions || 1);
+      setAdjustedIngredients(recipe.ingredients.map(ing => ({ ...ing })));
+    }
+  }, [recipe]);
+
   // When loading a favorite, set both base and portions
   useEffect(() => {
     if (params && params.favoriteData) {
       const favData = JSON.parse(params.favoriteData as string);
+      console.log('Loading savedPortions:', favData.savedPortions);
+
       setIsPersonalized(true);
       setCustomBaseIngredients(favData.ingredients);
-      setPortions(favData.savedPortions);
+      // Set the saved portions from the favorite
+      setPortions(favData.savedPortions || 1);
+      // Set the adjusted ingredients directly from the favorite
+      setAdjustedIngredients(favData.ingredients);
     } else {
       setIsPersonalized(false);
       setCustomBaseIngredients(null);
@@ -132,16 +150,29 @@ export default function RecipePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  // Recalculate adjustedIngredients when base or portions changes
+  // When loading a custom favorite, restore base and adjusted state
+  useEffect(() => {
+    if (params && params.favoriteData) {
+      const favData = JSON.parse(params.favoriteData as string);
+      setBaseIngredients(favData.ingredients.map(ing => ({ ...ing })));
+      setBasePortions(favData.savedPortions || 1);
+      setPortions(favData.savedPortions || 1);
+      setAdjustedIngredients(favData.ingredients.map(ing => ({ ...ing })));
+    }
+  }, [params.id]);
+
+  // Recalculate adjustedIngredients when base or portions changes (only for non-personalized recipes)
   useEffect(() => {
     if (isPersonalized && customBaseIngredients) {
-      // Use the saved portions as base
+      // For personalized recipes, use the saved portions as the base
+      const basePortions = recipe?.portions || 1;
+      const factor = portions / basePortions;
       setAdjustedIngredients(
         customBaseIngredients.map(ing => ({
           ...ing,
           quantity: typeof ing.quantity === 'number'
-          ? +(ing.quantity as number) * (portions / (customBaseIngredients.length > 0 ? portions : 1))
-          : ing.quantity
+            ? +(ing.quantity as number) * factor
+            : ing.quantity
         }))
       );
     } else if (recipe && !isPersonalized) {
@@ -177,19 +208,30 @@ export default function RecipePage() {
 
   const handleFavorite = () => setIsFavorite(prev => !prev);
   const handlePortionChange = (delta: number) => {
-    setPortions(prev => Math.max(1, prev + delta));
+    const newPortions = Math.max(1, portions + delta);
+    const factor = newPortions / basePortions;
+    setPortions(newPortions);
+    setAdjustedIngredients(
+      baseIngredients.map(ing => ({
+        ...ing,
+        quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
+      }))
+    );
   };
 
-  // Lógica para editar un ingrediente y recalcular el resto
+  // Edit ingredient and update portions and all ingredients
   const handleEditIngredient = () => {
-    if (selectedIngredientIdx === null || !editQuantity || !recipe) return;
-    const original = recipe.ingredients[selectedIngredientIdx];
-    const originalQty = typeof original.quantity === 'number' ? original.quantity : parseFloat(original.quantity as string);
+    if (selectedIngredientIdx === null || !editQuantity) return;
+    const originalQty = typeof baseIngredients[selectedIngredientIdx].quantity === 'number'
+      ? baseIngredients[selectedIngredientIdx].quantity
+      : parseFloat(baseIngredients[selectedIngredientIdx].quantity as string);
     const newQty = parseFloat(editQuantity);
     if (!originalQty || !newQty) return;
     const factor = newQty / originalQty;
+    const newPortions = Math.round(basePortions * factor);
+    setPortions(newPortions);
     setAdjustedIngredients(
-      recipe.ingredients.map((ing, idx) => ({
+      baseIngredients.map(ing => ({
         ...ing,
         quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
       }))
@@ -213,15 +255,23 @@ export default function RecipePage() {
     });
   };
 
-  // Guardar receta personalizada en favoritos (reemplaza si ya existe)
+  // Save custom recipe with both adjusted ingredients and portions
   const handleSaveCustomFavorite = async () => {
     if (!recipe) return;
     try {
+      console.log('Saving portions:', portions);
       const data = await AsyncStorage.getItem('favoriteRecipes');
       let favs = data ? JSON.parse(data) : [];
-      // No guardar más de 10 (excepto si reemplaza una existente)
       const existsIdx = favs.findIndex((r: any) => r._id === recipe._id && r.customized);
-      const customFavorite = { ...recipe, ingredients: adjustedIngredients, customized: true, savedPortions: portions };
+      // Use the current value of portions from state
+      const customFavorite = {
+        ...recipe,
+        ingredients: adjustedIngredients,
+        customized: true,
+        savedPortions: portions
+      };
+      console.log('Saving portions 2:', portions);
+
       if (existsIdx !== -1) {
         favs[existsIdx] = customFavorite;
       } else {
@@ -379,13 +429,31 @@ export default function RecipePage() {
         </View>
       </View>
 
-      {/* Main image */}
-      {recipe.image_url ? (
-        <Image
-          source={{ uri: recipe.image_url }}
-          style={styles.mainImage}
-          contentFit="cover"
-        />
+      {/* Main image carousel */}
+      {recipe.image_url || (recipe.aditionalMedia && recipe.aditionalMedia.length > 0) ? (
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={{ width: '100%', height: 220, marginVertical: 12 }}
+        >
+          {[
+            ...(recipe.image_url ? [recipe.image_url] : []),
+            ...(recipe.aditionalMedia || [])
+          ].map((img, idx) => (
+            <Image
+              key={idx}
+              source={{ uri: img }}
+              style={{
+                width: screenWidth * 0.9,
+                height: 220,
+                borderRadius: 12,
+                marginHorizontal: screenWidth * 0.05,
+              }}
+              resizeMode="cover"
+            />
+          ))}
+        </ScrollView>
       ) : (
         <Text
           style={{ textAlign: 'center', color: '#999', marginVertical: 16 }}
