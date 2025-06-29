@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -10,41 +11,62 @@ interface Props {
   navigation: any;
 }
 
+
 export default function PrincipalScreen({ navigation }: Props) {
   const router = useRouter();
+  const { login } = useAuth();
+
+  const handleGuestLogin = async () => {
+    try {
+      const response = await fetch('https://bon-appetit-production.up.railway.app/api/users/guest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await login(data.token);
+        router.replace('/(tabs)/home');
+      } else {
+        console.error('Error logging in as guest:', data.message);
+      }
+    } catch (err) {
+      console.error('Network error:', err);
+    }
+  };
+
   return (
     <>
-    <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-    <ThemedView style={styles.container}>
-      {/* Logo */}
-      <Image
-        source={require('@/assets/images/bon-appetit-logo.svg')}
-        style={styles.logo}
-        contentFit="contain"
-      />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <ThemedView style={styles.container}>
+        <Image
+          source={require('@/assets/images/bon-appetit-logo.svg')}
+          style={styles.logo}
+          contentFit="contain"
+        />
 
-      {/* Tagline */}
-      <ThemedText type="subtitle" style={styles.tagline}>
-        Tu mejor recetario online
-      </ThemedText>
-
-      {/* Iniciar sesión button */}
-      <Pressable
-        style={styles.button}
-        onPress={() => router.push('/login')}
-      >
-        <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-          Iniciar sesión
+        <ThemedText type="subtitle" style={styles.tagline}>
+          Tu mejor recetario online
         </ThemedText>
-      </Pressable>
 
-      {/* Guest link */}
-      <Pressable onPress={() => router.push('/sorry')}>
+        <Pressable
+          style={styles.button}
+          onPress={() => router.push('/login')}
+        >
+          <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+            Iniciar sesión
+          </ThemedText>
+        </Pressable>
+
+        <Pressable onPress={handleGuestLogin}>
           <ThemedText type="link" style={styles.guestLink}>
             {'Soy visitante, quiero\ningresar sin iniciar sesión'}
           </ThemedText>
         </Pressable>
-    </ThemedView>
+      </ThemedView>
     </>
   );
 }
