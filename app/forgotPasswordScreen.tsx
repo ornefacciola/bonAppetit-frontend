@@ -119,7 +119,7 @@ export default function ForgotPasswordScreen() {
               />
               {!emailValid && <Text style={styles.error}>Email inválido</Text>}
               <Pressable style={styles.button} onPress={handleSendCode}>
-                <Text style={styles.buttonText}>Ir ></Text>
+                <Text style={styles.buttonText}>Ir</Text>
               </Pressable>
             </>
           )}
@@ -157,7 +157,7 @@ export default function ForgotPasswordScreen() {
                 ))}
               </View>
               <Pressable style={styles.button} onPress={handleVerifyCode}>
-                <Text style={styles.buttonText}>Ok ></Text>
+                <Text style={styles.buttonText}>Ok</Text>
               </Pressable>
             </>
           )}
@@ -206,7 +206,7 @@ export default function ForgotPasswordScreen() {
               )}
 
               <Pressable style={styles.button} onPress={handleChangePassword}>
-                <Text style={styles.buttonText}>Ir ></Text>
+                <Text style={styles.buttonText}>Ir</Text>
               </Pressable>
             </>
           )}
