@@ -1,11 +1,18 @@
 // components/ui/AppLogo.tsx
-import { Image, StyleSheet } from 'react-native';
+import { Image, ImageStyle, StyleSheet } from 'react-native';
 
-export function AppLogo() {
+interface AppLogoProps {
+  width?: number;
+  height?: number;
+  style?: ImageStyle;
+  marginBottom?: number;
+}
+
+export function AppLogo({ width = 120, height = 36, style, marginBottom = 30 }: AppLogoProps) {
   return (
     <Image
       source={require('@/assets/images/bon-appetit-logo.svg')}
-      style={styles.logo}
+      style={[styles.logo, { width, height, marginBottom }, style]}
       resizeMode="contain"
     />
   );

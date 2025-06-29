@@ -1,5 +1,4 @@
 // app/home.tsx
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,6 +13,7 @@ import {
 import RecipeCard from '@/components/receta/RecipeCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { AppLogo } from '@/components/ui/AppLogo';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 
@@ -100,11 +100,7 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ThemedView style={styles.container}>
         {/* Logo */}
-        <Image
-          source={require('@/assets/images/bon-appetit-logo.svg')}
-          style={styles.logo}
-          contentFit="contain"
-        />
+        <AppLogo width={150} height={72} marginBottom={24} />
 
         {/* Search bar */}
         <TouchableOpacity style={styles.searchContainer} onPress={() => router.push('/search')}>
