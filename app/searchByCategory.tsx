@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 24,
+    paddingTop: 60,
     marginBottom: 12,
   },
   backButton: {
