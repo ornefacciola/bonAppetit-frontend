@@ -1,12 +1,48 @@
 import { ProtectedPage } from '@/components/ProtectedPage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // íconos
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+interface UserInfo {
+  _id: string;
+  name: string;
+  email: string;
+  alias: string;
+}
+
 export default function PerfilScreen() {
-  const nombre = 'Paulina';
-  const usuario = 'paulinacocina';
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        const userInfoString = await AsyncStorage.getItem('userInfo');
+        if (userInfoString) {
+          const user = JSON.parse(userInfoString);
+          setUserInfo(user);
+        }
+      } catch (error) {
+        console.error('Error loading user info:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserInfo();
+  }, []);
+
+  if (loading) {
+    return (
+      <ProtectedPage pageName="perfil">
+        <View style={[styles.container, { backgroundColor: '#F6F6F6', justifyContent: 'center', alignItems: 'center' }]}>
+          <Text>Cargando perfil...</Text>
+        </View>
+      </ProtectedPage>
+    );
+  }
 
   return (
     <ProtectedPage pageName="perfil">
@@ -17,8 +53,8 @@ export default function PerfilScreen() {
             <Ionicons name="person" size={32} color="#fff" />
           </View>
           <View>
-            <Text style={styles.name}>Bon Appetit {nombre}!</Text>
-            <Text style={styles.username}>@{usuario}</Text>
+            <Text style={styles.name}>Bon Appetit {userInfo?.name || 'Usuario'}!</Text>
+            <Text style={styles.username}>@{userInfo?.alias || 'usuario'}</Text>
           </View>
         </View>
 
