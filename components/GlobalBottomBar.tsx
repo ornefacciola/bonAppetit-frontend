@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -11,14 +12,16 @@ export function GlobalBottomBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { token } = useAuth();
+  const userRole = useUserRole();
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const ACTIVE_COLOR = isDark ? '#fff' : '#055B49';
   const INACTIVE_COLOR = isDark ? '#fff' : '#888';
 
-  // Only show if user is authenticated
-  if (!token) return null;
+  // Show if user is authenticated OR is guest
+  const isAuthenticated = token || userRole === 'guest';
+  if (!isAuthenticated) return null;
 
   // Pages where we don't want to show the bottom bar
   const hiddenPages = [
@@ -37,7 +40,7 @@ export function GlobalBottomBar() {
     '/',
     '/index',
   ];
-  if (!token || publicPages.includes(pathname)) {
+  if (!isAuthenticated || publicPages.includes(pathname)) {
     return null;
   }
 

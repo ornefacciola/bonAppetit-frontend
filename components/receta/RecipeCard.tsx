@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useUserRole } from '@/hooks/useUserRole';
+
 interface RecipeCardProps {
   id: string;
   title: string;
@@ -30,6 +32,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   variant = 'default', // valor por defecto
 }) => {
   const router = useRouter();
+  const userRole = useUserRole();
   const isCompact = variant === 'compact';
 
   const handlePress = () => {
@@ -53,16 +56,18 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         style={[styles.image, isCompact && styles.imageCompact]}
         contentFit="cover"
       />
-      <TouchableOpacity
-        style={styles.favoriteButton}
-        onPress={() => onToggleFavorite(id)}
-      >
-        <Ionicons
-          name={isFavorite ? 'heart' : 'heart-outline'}
-          size={24}
-          color={isFavorite ? '#FF6347' : '#FFF'}
-        />
-      </TouchableOpacity>
+      {userRole !== 'guest' && (
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={() => onToggleFavorite(id)}
+        >
+          <Ionicons
+            name={isFavorite ? 'heart' : 'heart-outline'}
+            size={24}
+            color={isFavorite ? '#FF6347' : '#FFF'}
+          />
+        </TouchableOpacity>
+      )}
       <View style={styles.content}>
         <View style={styles.titleRatingContainer}>
           <Text style={styles.title}>{title}</Text>

@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
 import SuccessModal from '@/components/ui/SuccessModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Ingredient {
   name: string;
@@ -53,6 +54,7 @@ export default function RecipePage() {
   const router = useRouter();
   const navigation = useNavigation();
   const { token } = useAuth();
+  const userRole = useUserRole();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export default function RecipePage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isCustomFavorite, setIsCustomFavorite] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showGuestProtectionModal, setShowGuestProtectionModal] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedIngredientIdx, setSelectedIngredientIdx] = useState<number | null>(null);
   const [editQuantity, setEditQuantity] = useState<string>('');
@@ -355,6 +358,14 @@ export default function RecipePage() {
     }
   };
 
+  const handleEvaluateRecipe = () => {
+    if (userRole === 'guest') {
+      setShowGuestProtectionModal(true);
+    } else {
+      setShowRatingModal(true);
+    }
+  };
+
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
@@ -520,7 +531,14 @@ export default function RecipePage() {
 
       {/* Botón guardar favorito personalizado */}
       {hasCustom && (
-        <TouchableOpacity style={styles.saveCustomBtn} onPress={handleSaveCustomFavorite}>
+        <TouchableOpacity 
+          style={[
+            styles.saveCustomBtn, 
+            userRole === 'guest' && { backgroundColor: '#ccc', opacity: 0.6 }
+          ]} 
+          onPress={userRole === 'guest' ? undefined : handleSaveCustomFavorite}
+          disabled={userRole === 'guest'}
+        >
           <Ionicons name="heart" size={18} color="#fff" />
           <Text style={styles.saveCustomBtnText}>Guardar en favoritos "A tu gusto"</Text>
         </TouchableOpacity>
@@ -556,7 +574,7 @@ export default function RecipePage() {
       {/* Button to open rating modal */}
       <TouchableOpacity
         style={styles.evalBtn}
-        onPress={() => setShowRatingModal(true)}
+        onPress={handleEvaluateRecipe}
       >
         <Text style={styles.evalBtnText}>
           Evaluar Receta
@@ -636,6 +654,42 @@ export default function RecipePage() {
         recipeTitle={recipe.title}
         onSubmit={handleSubmitRating}
       />
+
+      {/* Modal de protección para guests */}
+      <Modal
+        visible={showGuestProtectionModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGuestProtectionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }}>
+              Debes iniciar sesión
+            </Text>
+            <Text style={{ fontSize: 16, color: '#666', marginBottom: 24, textAlign: 'center' }}>
+              Para evaluar recetas necesitas tener una cuenta registrada.
+            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <TouchableOpacity 
+                style={[styles.cancelBtn, { flex: 1, marginRight: 8 }]} 
+                onPress={() => setShowGuestProtectionModal(false)}
+              >
+                <Text style={{ color: '#fff', textAlign: 'center' }}>Cerrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.saveBtn, { flex: 1, marginLeft: 8 }]} 
+                onPress={() => {
+                  setShowGuestProtectionModal(false);
+                  router.replace('/');
+                }}
+              >
+                <Text style={{ color: '#fff', textAlign: 'center' }}>Iniciar sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal para editar ingrediente */}
       <Modal

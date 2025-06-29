@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -17,25 +18,11 @@ export default function PrincipalScreen({ navigation }: Props) {
   const { login } = useAuth();
 
   const handleGuestLogin = async () => {
-    try {
-      const response = await fetch('https://bon-appetit-production.up.railway.app/api/users/guest', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        await login(data.token);
-        router.replace('/(tabs)/home');
-      } else {
-        console.error('Error logging in as guest:', data.message);
-      }
-    } catch (err) {
-      console.error('Network error:', err);
-    }
+    // Limpiar cualquier token previo y setear modo guest
+    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.removeItem('userInfo');
+    await AsyncStorage.setItem('userRole', 'guest');
+    router.replace('/(tabs)/home');
   };
 
   return (

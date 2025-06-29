@@ -6,12 +6,14 @@ import 'react-native-reanimated';
 
 import { GlobalBottomBar } from '@/components/GlobalBottomBar';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Redirect } from 'expo-router';
 
 import { useSegments } from 'expo-router';
 
 function ProtectedApp() {
   const { token, isLoading } = useAuth();
+  const userRole = useUserRole();
   const segments = useSegments();
 
   // Ruta actual (primer segmento)
@@ -19,9 +21,12 @@ function ProtectedApp() {
 
   const isPublicRoute = current === '' || current === 'index' || current === 'login' || current === 'forgotPasswordScreen';
 
-  if (isLoading) return null; // o Splash
+  if (isLoading || userRole === null) return null; // o Splash
 
-  if (!token && !isPublicRoute) {
+  // Allow access if user has token OR is guest
+  const isAuthenticated = token || userRole === 'guest';
+
+  if (!isAuthenticated && !isPublicRoute) {
     return <Redirect href="/" />;
   }
 
