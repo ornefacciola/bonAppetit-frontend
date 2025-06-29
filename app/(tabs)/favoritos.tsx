@@ -1,3 +1,4 @@
+import { ProtectedPage } from '@/components/ProtectedPage';
 import RecipeCard from '@/components/receta/RecipeCard';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -45,53 +46,55 @@ export default function FavoritosScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={28} color="#025E45" />
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/bon-appetit-logo.png')}
-            style={styles.logo}
-            contentFit="contain"
-          />
-        </View>
-        <View style={{ width: 28 }} />
-      </View>
-      <View style={styles.topSection}>
-        <Text style={styles.title}>Mis recetas favoritas</Text>
-      </View>
-      <ScrollView>
-        {favorites.length === 0 && (
-          <Text style={styles.empty}>No tienes recetas favoritas guardadas.</Text>
-        )}
-        {favorites.map((recipe, idx) => (
-          <View key={recipe._id || idx} style={styles.recipeRow}>
-            {recipe.customized && (
-              <View style={styles.customizedTagLeft}>
-                <Ionicons name="construct" size={16} color="#025E45" />
-                <Text style={styles.customizedText}>Modificado a tu gusto</Text>
-              </View>
-            )}
-            <RecipeCard
-              id={recipe._id}
-              title={recipe.title}
-              category={recipe.category}
-              author={recipe.user}
-              imageUrl={recipe.image_url}
-              rating={recipe.averageRating || 0}
-              isFavorite={true}
-              onToggleFavorite={() => handleRemoveFavorite(recipe._id, !!recipe.customized)}
-              onPress={() => router.push({
-                pathname: '/receta/[id]',
-                params: { id: recipe._id, favoriteData: JSON.stringify(recipe), fromFavorites: '1' }
-              })}
+    <ProtectedPage pageName="favoritos">
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="#025E45" />
+          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('@/assets/images/bon-appetit-logo.png')}
+              style={styles.logo}
+              contentFit="contain"
             />
           </View>
-        ))}
-      </ScrollView>
-    </View>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.topSection}>
+          <Text style={styles.title}>Tus Favoritos</Text>
+        </View>
+        <ScrollView>
+          {favorites.length === 0 && (
+            <Text style={styles.empty}>No tienes recetas favoritas guardadas.</Text>
+          )}
+          {favorites.map((recipe, idx) => (
+            <View key={recipe._id || idx} style={styles.recipeRow}>
+              {recipe.customized && (
+                <View style={styles.customizedTagLeft}>
+                  <Ionicons name="construct" size={16} color="#025E45" />
+                  <Text style={styles.customizedText}>Modificado a tu gusto</Text>
+                </View>
+              )}
+              <RecipeCard
+                id={recipe._id}
+                title={recipe.title}
+                category={recipe.category}
+                author={recipe.user}
+                imageUrl={recipe.image_url}
+                rating={recipe.averageRating || 0}
+                isFavorite={true}
+                onToggleFavorite={() => handleRemoveFavorite(recipe._id, !!recipe.customized)}
+                onPress={() => router.push({
+                  pathname: '/receta/[id]',
+                  params: { id: recipe._id, favoriteData: JSON.stringify(recipe), fromFavorites: '1' }
+                })}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </ProtectedPage>
   );
 }
 

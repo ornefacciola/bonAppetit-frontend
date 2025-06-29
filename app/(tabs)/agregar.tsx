@@ -1,9 +1,10 @@
 // app/(tabs)/agregar.tsx
+import { ProtectedPage } from '@/components/ProtectedPage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { AppLogo } from '@/components/ui/AppLogo';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -11,7 +12,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 
 const router = useRouter();
@@ -20,37 +21,43 @@ export default function Agregar() {
   const [searchText, setSearchText] = useState('');
 
   return (
-    <>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <ThemedView style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
-        {/* Logo */}
-        <AppLogo width={150} height={72} marginBottom={24} />
+    <ProtectedPage pageName="cargar-receta">
+      <>
+        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+        <ThemedView style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
+          {/* Logo */}
+          <Image
+            source={require('@/assets/images/bon-appetit-logo.svg')}
+            style={styles.logo}
+            contentFit="contain"
+          />
 
-        <SearchBar 
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+          <SearchBar 
+            value={searchText}
+            onChangeText={setSearchText}
+          />
 
-        {/* Botón */}
-        <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push('/modals/cargar-receta')}
-        >
-        <Text style={styles.buttonText}>Cargar Receta</Text>
-        </TouchableOpacity>
+          {/* Botón */}
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push('/modals/cargar-receta')}
+          >
+            <Text style={styles.buttonText}>Cargar Receta</Text>
+          </TouchableOpacity>
 
-        {/* Placeholder */}
-        <View style={styles.placeholderContainer}>
+          {/* Placeholder */}
+          <View style={styles.placeholderContainer}>
             <FontAwesome5 name="utensils" size={64} color="#C0C0C0" style={styles.placeholderIcon} />
-          <ThemedText type="defaultSemiBold" style={styles.placeholderText}>
-            Todavía no cargaste ninguna receta
-          </ThemedText>
-          <ThemedText type="default" style={styles.placeholderSubText}>
-            Clickea cargar receta para comenzar
-          </ThemedText>
-        </View>
-      </ThemedView>
-    </>
+            <ThemedText type="defaultSemiBold" style={styles.placeholderText}>
+              Todavía no cargaste ninguna receta
+            </ThemedText>
+            <ThemedText type="default" style={styles.placeholderSubText}>
+              Clickea cargar receta para comenzar
+            </ThemedText>
+          </View>
+        </ThemedView>
+      </>
+    </ProtectedPage>
   );
 }
 
