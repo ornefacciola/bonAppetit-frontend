@@ -1,9 +1,10 @@
 import RecipeCard from '@/components/receta/RecipeCard';
+import { AppLogo } from '@/components/ui/AppLogo';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function FavoritosScreen() {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -35,9 +36,26 @@ export default function FavoritosScreen() {
     }
   };
 
+  const handleBack = () => {
+    if (router.canGoBack?.()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tus Favoritos</Text>
+      <View style={styles.logoHeader}>
+        <AppLogo width={150} height={72} style={{ alignSelf: 'center' }} />
+      </View>
+      <View style={styles.rowHeader}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={28} color="#025E45" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Mis recetas favoritas</Text>
+        <View style={{ width: 28 }} />
+      </View>
       <ScrollView>
         {favorites.length === 0 && (
           <Text style={styles.empty}>No tienes recetas favoritas guardadas.</Text>
@@ -75,14 +93,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F6F6F6',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  logoHeader: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 8,
+    backgroundColor: '#F6F6F6',
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingTop: 40,
+    marginBottom: 12,
+  },
+  backButton: {
+    width: 28,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   title: {
+    flex: 1,
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 16,
     color: '#025E45',
+    textAlign: 'center',
   },
   empty: {
     color: '#888',
