@@ -1,6 +1,7 @@
+//app/modals/cargar-receta.tsx
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -14,24 +15,29 @@ import {
   View,
 } from 'react-native';
 
-import CategoriaSelector from '../../components/receta/CategoriaSelector';
 import IngredienteItem from '../../components/receta/IngredienteItem';
 import PasoItem from '../../components/receta/PasoItem';
 import BotonPrincipal from '../../components/ui/BotonPrincipal';
 import SubirFoto from '../../components/ui/SubirFoto';
 import SuccessModal from '../../components/ui/SuccessModal';
 
-
-const CATEGORIAS = ['Postres', 'Ensaladas', 'Milanesas', 'Sopas', 'Bebidas', 'Pastas'];
-const INGREDIENTES_DISPONIBLES = [
-  'Harina', 'Leche', 'Huevos', 'Pollo', 'Pan rallado',
-  'Sal', 'Azúcar', 'Queso', 'Carne',
-];
-
-
 export default function CargarRecetaModal() {
   const router = useRouter();
 
+  // ----------- ESTADOS -----------
+  // CATEGORÍAS
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [categoriasFiltradas, setCategoriasFiltradas] = useState<any[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(false);
+  const [errorCategorias, setErrorCategorias] = useState<string | null>(null);
+
+  // INGREDIENTES
+  const [allIngredients, setAllIngredients] = useState<any[]>([]);
+  const [ingredientesSugeridos, setIngredientesSugeridos] = useState<any[]>([]);
+  const [loadingIngredientes, setLoadingIngredientes] = useState(false);
+  const [errorIngredientes, setErrorIngredientes] = useState<string | null>(null);
+
+  // CAMPOS RECETA
   const [modalExitoVisible, setModalExitoVisible] = useState(false);
 
   const [titulo, setTitulo] = useState('');
@@ -47,10 +53,37 @@ export default function CargarRecetaModal() {
   const [pasos, setPasos] = useState([{ descripcion: '', media: null as string | null }]);
   const [fotoFinal, setFotoFinal] = useState<string | null>(null);
 
-  // --- Categoría ---
-  const categoriasFiltradas = CATEGORIAS.filter((item) =>
-    item.toLowerCase().includes(categoriaFiltro.toLowerCase())
-  );
+  // ----------- TRAER TODAS LAS CATEGORÍAS SOLO 1 VEZ -----------
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      setLoadingCategorias(true);
+      try {
+        const res = await fetch('https://bon-appetit-production.up.railway.app/api/categories');
+        const data = await res.json();
+        if (data.categories) {
+          setAllCategories(data.categories);
+          setCategoriasFiltradas(data.categories);
+        }
+      } catch (err) {
+        setErrorCategorias('No se pudieron cargar las categorías');
+      } finally {
+        setLoadingCategorias(false);
+      }
+    };
+    if (categoriaModal && allCategories.length === 0) fetchAllCategories();
+    if (!categoriaModal) setCategoriaFiltro('');
+  }, [categoriaModal]);
+
+  // FILTRAR LOCALMENTE AL TIPEAR EN BUSCADOR DE CATEGORÍAS
+  useEffect(() => {
+    if (categoriaModal) {
+      const filtradas = allCategories.filter(
+        (cat: any) =>
+          cat.name && cat.name.toLowerCase().includes(categoriaFiltro.trim().toLowerCase())
+      );
+      setCategoriasFiltradas(filtradas);
+    }
+  }, [categoriaFiltro, categoriaModal, allCategories]);
 
   const handleCategoriaSelect = (item: string) => {
     setCategoria(item);
@@ -58,21 +91,51 @@ export default function CargarRecetaModal() {
     setCategoriaFiltro('');
   };
 
-  // --- Ingredientes ---
-  const ingredientesFiltrados = INGREDIENTES_DISPONIBLES.filter((item) =>
-    item.toLowerCase().includes(ingredienteFiltro.toLowerCase())
-  );
+  // ----------- TRAER TODOS LOS INGREDIENTES SOLO 1 VEZ -----------
+  useEffect(() => {
+    const fetchAllIngredients = async () => {
+      setLoadingIngredientes(true);
+      try {
+        const res = await fetch('https://bon-appetit-production.up.railway.app/api/ingredients');
+        const data = await res.json();
+        if (data.status === 'success') {
+          setAllIngredients(data.ingredients);
+          setIngredientesSugeridos(data.ingredients);
+        }
+      } catch (err) {
+        setErrorIngredientes('No se pudieron cargar los ingredientes');
+      } finally {
+        setLoadingIngredientes(false);
+      }
+    };
+    if (ingredienteModalIndex !== null && allIngredients.length === 0) fetchAllIngredients();
+    if (ingredienteModalIndex === null) setIngredienteFiltro('');
+  }, [ingredienteModalIndex]);
 
-  const handleIngredienteSelect = (item: string) => {
+  // FILTRAR LOCALMENTE AL TIPEAR EN BUSCADOR DE INGREDIENTES
+  useEffect(() => {
+    if (ingredienteModalIndex !== null && ingredienteFiltro.trim() !== '') {
+      const filtered = allIngredients.filter((ing: any) =>
+        ing.name && ing.name.toLowerCase().includes(ingredienteFiltro.trim().toLowerCase())
+      );
+      setIngredientesSugeridos(filtered);
+    } else if (ingredienteModalIndex !== null) {
+      setIngredientesSugeridos(allIngredients);
+    }
+  }, [ingredienteFiltro, ingredienteModalIndex, allIngredients]);
+
+  const handleIngredienteSelect = (name: string) => {
     if (ingredienteModalIndex !== null) {
       const nuevos = [...ingredientes];
-      nuevos[ingredienteModalIndex].nombre = item;
+      nuevos[ingredienteModalIndex].nombre = name;
       setIngredientes(nuevos);
       setIngredienteModalIndex(null);
       setIngredienteFiltro('');
+      setIngredientesSugeridos([]);
     }
   };
 
+  // CRUD INGREDIENTES
   const handleIngredienteChange = (
     index: number,
     field: 'nombre' | 'cantidad' | 'unidad',
@@ -92,7 +155,7 @@ export default function CargarRecetaModal() {
     setIngredientes(nuevos.length ? nuevos : [{ nombre: '', cantidad: '', unidad: '' }]);
   };
 
-  // --- Pasos ---
+  // CRUD PASOS
   const agregarPaso = () => {
     setPasos([...pasos, { descripcion: '', media: null }]);
   };
@@ -147,7 +210,6 @@ export default function CargarRecetaModal() {
   };
 
   const handleCargarReceta = () => {
-    // Acá se arma el JSON para guardar
     const receta = {
       titulo,
       categoria,
@@ -183,9 +245,14 @@ export default function CargarRecetaModal() {
             />
           </View>
 
+          {/* Categoría */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Categoría</Text>
-            <CategoriaSelector value={categoria} onSelect={setCategoria} />
+            <TouchableOpacity style={styles.input} onPress={() => setCategoriaModal(true)}>
+              <Text style={{ color: categoria ? '#222' : '#999' }}>
+                {categoria ? categoria : 'Seleccionar categoría...'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Porciones */}
@@ -217,7 +284,6 @@ export default function CargarRecetaModal() {
                 onSeleccionarNombre={() => setIngredienteModalIndex(index)}
               />
             ))}
-
             <TouchableOpacity style={styles.addButton} onPress={agregarIngrediente}>
               <Text style={styles.addButtonText}>Agregar ingrediente</Text>
             </TouchableOpacity>
@@ -237,8 +303,7 @@ export default function CargarRecetaModal() {
                 onChangeDescripcion={(text) => handlePasoChange(index, text)}
                 onSeleccionarMedia={() => seleccionarMedia(index)}
               />
-              ))}
-
+            ))}
             <TouchableOpacity style={styles.addButton} onPress={agregarPaso}>
               <Text style={styles.addButtonText}>Añadir paso</Text>
             </TouchableOpacity>
@@ -253,7 +318,7 @@ export default function CargarRecetaModal() {
         </ScrollView>
       </View>
 
-      {/* MODALES */}
+      {/* MODAL DE CATEGORÍAS */}
       <Modal visible={categoriaModal} transparent animationType="slide">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setCategoriaModal(false)} activeOpacity={1}>
           <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
@@ -262,20 +327,25 @@ export default function CargarRecetaModal() {
               placeholder="Buscar categoría..."
               value={categoriaFiltro}
               onChangeText={setCategoriaFiltro}
+              autoFocus
             />
+            {loadingCategorias && <Text>Cargando categorías...</Text>}
+            {errorCategorias && <Text style={{ color: 'red' }}>{errorCategorias}</Text>}
             <FlatList
               data={categoriasFiltradas}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.modalItem} onPress={() => handleCategoriaSelect(item)}>
-                  <Text style={styles.modalItemText}>{item}</Text>
+                <TouchableOpacity style={styles.modalItem} onPress={() => handleCategoriaSelect(item.name)}>
+                  <Text style={styles.modalItemText}>{item.name}</Text>
                 </TouchableOpacity>
               )}
+              keyboardShouldPersistTaps="always"
             />
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
+      {/* MODAL DE INGREDIENTES */}
       <Modal visible={ingredienteModalIndex !== null} transparent animationType="slide">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setIngredienteModalIndex(null)} activeOpacity={1}>
           <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
@@ -284,26 +354,38 @@ export default function CargarRecetaModal() {
               placeholder="Buscar ingrediente..."
               value={ingredienteFiltro}
               onChangeText={setIngredienteFiltro}
+              autoFocus
             />
+            {loadingIngredientes && <Text>Cargando ingredientes...</Text>}
+            {errorIngredientes && <Text style={{ color: 'red' }}>{errorIngredientes}</Text>}
             <FlatList
-              data={ingredientesFiltrados}
-              keyExtractor={(item) => item}
+              data={ingredientesSugeridos}
+              keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.modalItem} onPress={() => handleIngredienteSelect(item)}>
-                  <Text style={styles.modalItemText}>{item}</Text>
+                <TouchableOpacity style={styles.modalItem} onPress={() => handleIngredienteSelect(item.name)}>
+                  <Text style={styles.modalItemText}>{item.name}</Text>
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                !loadingIngredientes && ingredienteFiltro.trim() !== ''
+                  ? <Text>No hay ingredientes</Text>
+                  : null
+              }
+              keyboardShouldPersistTaps="always"
             />
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
       <SuccessModal
-    visible={modalExitoVisible}
-    onClose={() => {
-      setModalExitoVisible(false);
-      router.push('/(tabs)/agregar'); // o donde quieras redirigir
-    }}
-  />
+        visible={modalExitoVisible}
+        onClose={() => {
+          setModalExitoVisible(false);
+          router.push('/(tabs)/agregar');
+        }}
+        title={''}
+        message={''}
+      />
     </KeyboardAvoidingView>
   );
 }
