@@ -11,7 +11,7 @@ interface AppLogoProps {
 export function AppLogo({ width = 120, height = 36, style, marginBottom = 30 }: AppLogoProps) {
   return (
     <Image
-      source={require('@/assets/images/bon-appetit-logo.svg')}
+      source={require('@/assets/images/bon-appetit-logo.png')}
       style={[styles.logo, { width, height, marginBottom }, style]}
       resizeMode="contain"
     />
