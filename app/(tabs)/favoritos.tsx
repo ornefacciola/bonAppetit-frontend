@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#025E45',
+    color: '#000000',
     textAlign: 'center',
   },
   empty: {
