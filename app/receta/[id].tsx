@@ -8,6 +8,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Text
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
 import SuccessModal from '@/components/ui/SuccessModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Ingredient {
   name: string;
@@ -51,6 +52,7 @@ export default function RecipePage() {
   const id = params.id as string;
   const router = useRouter();
   const navigation = useNavigation();
+  const { token } = useAuth();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,15 +118,30 @@ export default function RecipePage() {
     }
   }, [recipe, isPersonalized]);
 
-  // Ajustar ingredientes al cambiar porciones
+  // When loading a favorite, set both base and portions
+  useEffect(() => {
+    if (params && params.favoriteData) {
+      const favData = JSON.parse(params.favoriteData as string);
+      setIsPersonalized(true);
+      setCustomBaseIngredients(favData.ingredients);
+      setPortions(favData.savedPortions);
+    } else {
+      setIsPersonalized(false);
+      setCustomBaseIngredients(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
+
+  // Recalculate adjustedIngredients when base or portions changes
   useEffect(() => {
     if (isPersonalized && customBaseIngredients) {
-      const basePortions = recipe?.portions || 1;
-      const factor = portions / basePortions;
+      // Use the saved portions as base
       setAdjustedIngredients(
         customBaseIngredients.map(ing => ({
           ...ing,
-          quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
+          quantity: typeof ing.quantity === 'number'
+          ? +(ing.quantity as number) * (portions / (customBaseIngredients.length > 0 ? portions : 1))
+          : ing.quantity
         }))
       );
     } else if (recipe && !isPersonalized) {
@@ -136,7 +153,7 @@ export default function RecipePage() {
         }))
       );
     }
-  }, [portions, recipe, isPersonalized, customBaseIngredients]);
+  }, [portions, customBaseIngredients, isPersonalized, recipe]);
 
   // Detectar si hay cambios personalizados
   useEffect(() => {
@@ -157,20 +174,6 @@ export default function RecipePage() {
     };
     checkIfFavorite();
   }, [recipe, adjustedIngredients]);
-
-  // Si la receta viene de favoritos y es personalizada, cargar los valores modificados SOLO una vez
-  useEffect(() => {
-    if (params && params.favoriteData) {
-      const favData = JSON.parse(params.favoriteData as string);
-      setAdjustedIngredients(favData.ingredients);
-      setCustomBaseIngredients(favData.ingredients);
-      setIsPersonalized(true);
-    } else {
-      setIsPersonalized(false);
-      setCustomBaseIngredients(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
 
   const handleFavorite = () => setIsFavorite(prev => !prev);
   const handlePortionChange = (delta: number) => {
@@ -218,14 +221,15 @@ export default function RecipePage() {
       let favs = data ? JSON.parse(data) : [];
       // No guardar más de 10 (excepto si reemplaza una existente)
       const existsIdx = favs.findIndex((r: any) => r._id === recipe._id && r.customized);
+      const customFavorite = { ...recipe, ingredients: adjustedIngredients, customized: true, savedPortions: portions };
       if (existsIdx !== -1) {
-        favs[existsIdx] = { ...recipe, ingredients: adjustedIngredients, customized: true };
+        favs[existsIdx] = customFavorite;
       } else {
         if (favs.length >= 10) {
           setShowSuccessModal(false);
           return alert('Solo puedes guardar hasta 10 recetas favoritas personalizadas.');
         }
-        favs.push({ ...recipe, ingredients: adjustedIngredients, customized: true });
+        favs.push(customFavorite);
       }
       await AsyncStorage.setItem('favoriteRecipes', JSON.stringify(favs));
       setShowSuccessModal(true);
@@ -249,6 +253,55 @@ export default function RecipePage() {
       }
     } catch (e) {
       alert('Error al eliminar favorito');
+    }
+  };
+
+  // Submit rating and comment to backend
+  const handleSubmitRating = async (rating: number, comment: string) => {
+    if (!recipe || !token) {
+      console.log('Missing recipe or token:', { recipe: !!recipe, token: !!token });
+      return;
+    }
+    
+    console.log('Submitting rating:', { recipeId: recipe._id, rating, comment, token: token.substring(0, 20) + '...' });
+    
+    try {
+      const response = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recipe._id}/rate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          rate: rating,
+          comment: comment,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (data.status === 'success') {
+        console.log('Rating submitted successfully, refreshing recipe data...');
+        // Refresh the recipe data to show the new rating/comment
+        const recipeResponse = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recipe._id}`);
+        const recipeData = await recipeResponse.json();
+        console.log('Refreshed recipe data:', recipeData);
+        if (recipeData.status === 'success') {
+          const foundRecipe = Array.isArray(recipeData.payload) ? recipeData.payload[0] : recipeData.payload;
+          if (foundRecipe) {
+            setRecipe(foundRecipe);
+            console.log('Recipe updated with new rating');
+          }
+        }
+      } else {
+        console.error('API returned error:', data);
+        throw new Error(data.error || 'Failed to submit rating');
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      throw error;
     }
   };
 
@@ -363,7 +416,7 @@ export default function RecipePage() {
           color="#666"
         />
         <Text style={styles.portionText}>
-          {portions} porción{portions > 1 ? 'es' : ''}
+          {portions} porcion{portions > 1 ? 'es' : ''}
         </Text>
         <TouchableOpacity
           style={styles.portionBtn}
@@ -513,7 +566,7 @@ export default function RecipePage() {
         visible={showRatingModal}
         onClose={() => setShowRatingModal(false)}
         recipeTitle={recipe.title}
-        onSubmit={() => {} }
+        onSubmit={handleSubmitRating}
       />
 
       {/* Modal para editar ingrediente */}

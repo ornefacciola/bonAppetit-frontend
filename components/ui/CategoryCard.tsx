@@ -57,7 +57,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F6F6F6', // Placeholder background
     marginBottom: 8,
   },
   title: {
