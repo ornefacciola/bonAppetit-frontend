@@ -1,7 +1,7 @@
 import RecipeCard from '@/components/receta/RecipeCard';
-import { AppLogo } from '@/components/ui/AppLogo';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -46,15 +46,21 @@ export default function FavoritosScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.logoHeader}>
-        <AppLogo width={150} height={72} style={{ alignSelf: 'center' }} />
-      </View>
-      <View style={styles.rowHeader}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#025E45" />
         </TouchableOpacity>
-        <Text style={styles.title}>Mis recetas favoritas</Text>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('@/assets/images/bon-appetit-logo.png')}
+            style={styles.logo}
+            contentFit="contain"
+          />
+        </View>
         <View style={{ width: 28 }} />
+      </View>
+      <View style={styles.topSection}>
+        <Text style={styles.title}>Mis recetas favoritas</Text>
       </View>
       <ScrollView>
         {favorites.length === 0 && (
@@ -96,26 +102,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingTop: 0,
   },
-  logoHeader: {
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 8,
-    backgroundColor: '#F6F6F6',
-  },
-  rowHeader: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 60,
+    paddingBottom: 12,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    backgroundColor: '#F6F6F6',
   },
   backButton: {
     width: 28,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
-  title: {
+  logoContainer: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 150,
+    height: 72,
+  },
+  topSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  title: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#000000',

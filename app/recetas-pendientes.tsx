@@ -33,8 +33,6 @@ export default function RecetasPendientes() {
         <Text style={styles.title}>Pendientes de aprobación</Text>
       </View>
 
-      <Text style={styles.subsection}>Recetas:</Text>
-
       <ScrollView contentContainerStyle={styles.scroll}>
         {recetasPendientes.map((receta) => (
           <RecipeCard
@@ -62,17 +60,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 24,
+    marginTop: 9,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-  },
-  subsection: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#025E45',
-    marginBottom: 12,
   },
   scroll: {
     paddingBottom: 100,

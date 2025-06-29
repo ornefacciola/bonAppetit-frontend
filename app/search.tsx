@@ -11,6 +11,7 @@ import {
 
 import RecipeCard from '@/components/receta/RecipeCard';
 import { ThemedView } from '@/components/ThemedView';
+import { AppLogo } from '@/components/ui/AppLogo';
 import { IngredientModal } from '@/components/ui/IngredientModal';
 import { OrderModal } from '@/components/ui/OrderModal';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -130,6 +131,7 @@ export default function SearchScreen() {
 
     return (
         <ThemedView style={styles.container}>
+            <AppLogo width={150} height={72} marginBottom={24} />
             <View style={styles.header}>
                 <Ionicons name="arrow-back" size={24} onPress={() => router.back()} />
                 <Text style={styles.title}>Buscador</Text>
