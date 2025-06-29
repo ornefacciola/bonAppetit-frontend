@@ -3,10 +3,18 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { OrderModal } from '@/components/ui/OrderModal';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { FlatList, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const ORDER_OPTIONS = [
+  { label: "Más nuevo a más viejo", value: "publishedDate_desc" },
+  { label: "Más viejo a más nuevo", value: "publishedDate_asc" },
+  { label: "Alfabéticamente (A a Z)", value: "title_asc" },
+  { label: "Alfabéticamente (Z a A)", value: "title_desc" },
+];
 
 export default function SearchByCategoryScreen() {
   const router = useRouter();
@@ -18,6 +26,8 @@ export default function SearchByCategoryScreen() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [favoriteRecipes, setFavoriteRecipes] = useState<{ [key: string]: boolean }>({});
+  const [orderModalVisible, setOrderModalVisible] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState('publishedDate_desc');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -37,7 +47,8 @@ export default function SearchByCategoryScreen() {
   useEffect(() => {
     if (selectedCategory) {
       setLoading(true);
-      fetch(`https://bon-appetit-production.up.railway.app/api/recipies?category=${encodeURIComponent(selectedCategory)}`)
+      const [sortBy, order] = selectedOrder.split('_');
+      fetch(`https://bon-appetit-production.up.railway.app/api/recipies?category=${encodeURIComponent(selectedCategory)}&sortBy=${sortBy}&order=${order}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {
@@ -58,7 +69,7 @@ export default function SearchByCategoryScreen() {
     } else {
       setRecipes([]);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedOrder]);
 
   const handleToggleFavorite = (id: string) => {
     setFavoriteRecipes((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -99,10 +110,22 @@ export default function SearchByCategoryScreen() {
           ))}
         </ScrollView>
 
-        {/* Resultados de recetas */}
+        {/* Resultados de recetas y botón de ordenar en la misma línea */}
         {selectedCategory && (
-          <ThemedText style={styles.resultsText}>{recipes.length} Resultados</ThemedText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <ThemedText style={[styles.resultsText, { marginBottom: 0 }]}>{recipes.length} Resultados</ThemedText>
+            <TouchableOpacity style={{ backgroundColor: '#E5E5E5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }} onPress={() => setOrderModalVisible(true)}>
+              <Text style={{ color: '#333', marginBottom: 0 }}>Ordenar ▾</Text>
+            </TouchableOpacity>
+          </View>
         )}
+        <OrderModal
+          visible={orderModalVisible}
+          selected={selectedOrder}
+          onSelect={(value) => setSelectedOrder(value)}
+          onClose={() => setOrderModalVisible(false)}
+          options={ORDER_OPTIONS}
+        />
 
         {/* FlatList SOLO para recetas, nunca envuelve categorías */}
         <FlatList
