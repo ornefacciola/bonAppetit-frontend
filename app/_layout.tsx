@@ -10,6 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Redirect } from 'expo-router';
 
 import { useSegments } from 'expo-router';
+import { FavoriteProvider } from '../contexts/FavoriteContext';
 
 function ProtectedApp() {
   const { token, isLoading } = useAuth();
@@ -67,8 +68,10 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <ProtectedApp />
-    </AuthProvider>
+    <FavoriteProvider>
+      <AuthProvider>
+        <ProtectedApp />
+      </AuthProvider>
+    </FavoriteProvider>
   );
 }

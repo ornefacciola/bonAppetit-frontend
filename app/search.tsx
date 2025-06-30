@@ -17,6 +17,7 @@ import { OrderModal } from '@/components/ui/OrderModal';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SearchTabs } from '@/components/ui/SearchTabs';
 import { useRouter } from 'expo-router';
+import { useFavorite } from '../contexts/FavoriteContext';
 
 const ORDER_OPTIONS = [
     { label: "Más nuevo a más viejo", value: "publishedDate_desc" },
@@ -40,6 +41,7 @@ export default function SearchScreen() {
     const [includeIngredients, setIncludeIngredients] = useState<string[]>([]);
     const [excludeIngredients, setExcludeIngredients] = useState<string[]>([]);
     const [showIngredientUI, setShowIngredientUI] = useState(true);
+    const { isFavorite, toggleFavorite } = useFavorite();
 
     useEffect(() => {
         const fetchIngredients = async () => {
@@ -252,8 +254,8 @@ export default function SearchScreen() {
                                     author={receta.user}
                                     imageUrl={receta.image_url}
                                     rating={receta.averageRating || 0}
-                                    isFavorite={false}
-                                    onToggleFavorite={() => { }}
+                                    isFavorite={isFavorite(receta._id)}
+                                    onToggleFavorite={() => toggleFavorite(receta._id)}
                                     variant="compact"
                                 />
                             ))

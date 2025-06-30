@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFavorite } from '../contexts/FavoriteContext';
 
 const ORDER_OPTIONS = [
   { label: "Más nuevo a más viejo", value: "publishedDate_desc" },
@@ -26,9 +27,10 @@ export default function SearchByCategoryScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory || null);
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [favoriteRecipes, setFavoriteRecipes] = useState<{ [key: string]: boolean }>({});
   const [orderModalVisible, setOrderModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState('publishedDate_desc');
+
+  const { isFavorite, toggleFavorite } = useFavorite();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -71,10 +73,6 @@ export default function SearchByCategoryScreen() {
       setRecipes([]);
     }
   }, [selectedCategory, selectedOrder]);
-
-  const handleToggleFavorite = (id: string) => {
-    setFavoriteRecipes((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   return (
     <>
@@ -144,8 +142,8 @@ export default function SearchByCategoryScreen() {
               author={item.author}
               imageUrl={item.imageUrl}
               rating={item.rating}
-              onToggleFavorite={handleToggleFavorite}
-              isFavorite={favoriteRecipes[item.id] || false}
+              onToggleFavorite={() => toggleFavorite(item.id)}
+              isFavorite={isFavorite(item.id)}
               variant="compact"
             />
           )}

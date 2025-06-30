@@ -1,4 +1,5 @@
 // app/home.tsx
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -16,18 +17,11 @@ import { ThemedView } from '@/components/ThemedView';
 import { AppLogo } from '@/components/ui/AppLogo';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '../../components/ui/IconSymbol';
+import { useFavorite } from '../../contexts/FavoriteContext';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [favoriteRecipes, setFavoriteRecipes] = useState<{
-    [key: string]: boolean;
-  }>({
-    "1": true, // Ensalada Caesar
-    "2": false, // Sopa de Lentejas
-    "3": true, // Pasta con Camarones
-    "4": false, // Tacos al Pastor
-    "5": true, // Curry de Pollo
-  });
+  const { isFavorite, toggleFavorite } = useFavorite();
 
   const [categories, setCategories] = useState<{
     id: string;
@@ -43,6 +37,8 @@ export default function HomeScreen() {
     imageUrl: string;
     rating: number;
   }[]>([]);
+
+  const [favoriteRecipes, setFavoriteRecipes] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -78,21 +74,34 @@ export default function HomeScreen() {
         console.error("Error fetching recent recipes:", error);
       }
     };
+    const fetchFavoriteRecipes = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) return;
+        const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (response.ok && data.status === 'success') {
+          setFavoriteRecipes(data.recipes || []);
+        }
+      } catch (e) {
+        // handle error
+      }
+    };
 
     fetchCategories();
     fetchRecentRecipes();
+    fetchFavoriteRecipes();
   }, []);
 
   const handleCardPress = (id: string) => {
     console.log(`Recipe card ${id} pressed`);
     // Lógica para navegar a la pantalla de detalles de la receta
-  };
-
-  const handleToggleFavorite = (id: string) => {
-    setFavoriteRecipes((prevFavorites) => ({
-      ...prevFavorites,
-      [id]: !prevFavorites[id],
-    }));
   };
 
   return (
@@ -128,8 +137,8 @@ export default function HomeScreen() {
                 author={recipe.author}
                 imageUrl={recipe.imageUrl}
                 rating={recipe.rating}
-                onToggleFavorite={handleToggleFavorite}
-                isFavorite={favoriteRecipes[recipe.id] || false}
+                onToggleFavorite={() => toggleFavorite(recipe.id)}
+                isFavorite={isFavorite(recipe.id)}
               />
             ))}
           </ScrollView>
@@ -162,26 +171,23 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            <RecipeCard
-              id="4"
-              title="Tacos al Pastor"
-              category="Saludable"
-              author="mexicanfoodie"
-              imageUrl="https://images.unsplash.com/photo-1612876800057-0a2a1b9b0b0f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              rating={4.8}
-              onToggleFavorite={handleToggleFavorite}
-              isFavorite={favoriteRecipes["4"]}
-            />
-            <RecipeCard
-              id="5"
-              title="Curry de Pollo"
-              category="Carnes"
-              author="spicelover"
-              imageUrl="https://images.unsplash.com/photo-1596766432619-5a1e2f7c0a6b?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              rating={4.6}
-              onToggleFavorite={handleToggleFavorite}
-              isFavorite={favoriteRecipes["5"]}
-            />
+            {favoriteRecipes
+              .slice()
+              .sort((a, b) => a.title.localeCompare(b.title))
+              .slice(0, 3)
+              .map((recipe) => (
+                <RecipeCard
+                  key={recipe._id}
+                  id={recipe._id}
+                  title={recipe.title}
+                  category={recipe.category}
+                  author={recipe.user}
+                  imageUrl={recipe.image_url}
+                  rating={recipe.averageRating || 0}
+                  onToggleFavorite={() => toggleFavorite(recipe._id)}
+                  isFavorite={isFavorite(recipe._id)}
+                />
+              ))}
           </ScrollView>
           <View style={{ height: 32 }} />
         </ScrollView>
