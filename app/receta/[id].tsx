@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useFavorite } from '../../contexts/FavoriteContext';
 
 interface Ingredient {
   name: string;
@@ -57,7 +58,6 @@ export default function RecipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [portions, setPortions] = useState<number>(1);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isCustomFavorite, setIsCustomFavorite] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showGuestProtectionModal, setShowGuestProtectionModal] = useState(false);
@@ -71,6 +71,7 @@ export default function RecipePage() {
   const [baseIngredients, setBaseIngredients] = useState<Ingredient[]>([]);
   const [basePortions, setBasePortions] = useState<number>(1);
   const screenWidth = Dimensions.get('window').width;
+  const { isFavorite, toggleFavorite } = useFavorite();
 
   // Safe back navigation
   const handleBack = () => {
@@ -211,7 +212,7 @@ export default function RecipePage() {
         
         if (response.ok && data.status === 'success') {
           const isFav = data.recipies?.some((fav: any) => fav._id === recipe._id);
-          setIsFavorite(!!isFav);
+          // This line is now redundant as the useFavorite context handles this
         }
       } catch (error) {
         console.error('Error checking favorite status:', error);
@@ -219,68 +220,6 @@ export default function RecipePage() {
     };
     checkIfFavorite();
   }, [recipe, token]);
-
-  const handleAddFavorite = async () => {
-    if (!recipe || !token) return;
-    console.log('TOKEN AGREGAR FAVORITO:', token);
-    
-    try {
-      const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log('RESPUESTA AGREGAR FAVORITO:', data);
-
-      if (response.ok && data.status === 'success') {
-        setIsFavorite(true);
-        Alert.alert('Éxito', 'Receta agregada a favoritos');
-      } else {
-        setIsFavorite(false);
-        Alert.alert('Error', data.error || 'Error al agregar a favoritos');
-      }
-    } catch (error) {
-      setIsFavorite(false);
-      Alert.alert('Error', 'Error de conexión al agregar favorito');
-    }
-  };
-
-  const handleRemoveFavorite = async () => {
-    if (!recipe || !token) return;
-    console.log('TOKEN ELIMINAR FAVORITO:', token);
-    
-    try {
-      const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log('RESPUESTA ELIMINAR FAVORITO:', data);
-      
-      if (response.ok && data.status === 'success') {
-        setIsFavorite(false);
-        Alert.alert('Éxito', 'Receta eliminada de favoritos');
-        // Si vino de favoritos, volver atrás
-        if (params && params.fromFavorites) {
-          router.back();
-        }
-      } else {
-        console.error('Error removing favorite:', data);
-        Alert.alert('Error', data.message || 'Error al eliminar de favoritos');
-      }
-    } catch (error) {
-      console.error('Error removing favorite:', error);
-      Alert.alert('Error', 'Error de conexión al eliminar favorito');
-    }
-  };
 
   const handlePortionChange = (delta: number) => {
     const newPortions = Math.max(1, portions + delta);
@@ -447,9 +386,13 @@ export default function RecipePage() {
           <View style={styles.favoriteRow}>
             <TouchableOpacity
               style={styles.favoriteBtn}
-              onPress={isFavorite ? handleRemoveFavorite : handleAddFavorite}
+              onPress={() => toggleFavorite(recipe._id)}
             >
-              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={isFavorite ? '#FF6347' : '#888'} />
+              <Ionicons
+                name={isFavorite(recipe._id) ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isFavorite(recipe._id) ? '#FF6347' : '#888'}
+              />
             </TouchableOpacity>
             {isCustomFavorite && (
               <View style={styles.customizedTagRight}>
