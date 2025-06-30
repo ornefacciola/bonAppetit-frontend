@@ -1,5 +1,4 @@
 // app/home.tsx
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -23,7 +22,7 @@ import { useFavorite } from '../../contexts/FavoriteContext';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isFavorite: isFavoriteApi, toggleFavorite } = useFavorite();
+  const { isFavorite, toggleFavorite, favoriteIds } = useFavorite();
   const userRole = useUserRole();
 
   const [categories, setCategories] = useState<{
@@ -33,9 +32,7 @@ export default function HomeScreen() {
   }[]>([]);
 
   const [recentRecipes, setRecentRecipes] = useState<any[]>([]);
-  const [favoriteRecipes, setFavoriteRecipes] = useState<any[]>([]);
-  const [customFavorites, setCustomFavorites] = useState<any[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [topFavoriteRecipes, setTopFavoriteRecipes] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -71,76 +68,43 @@ export default function HomeScreen() {
         console.error("Error fetching recent recipes:", error);
       }
     };
-    const fetchFavoriteRecipes = async () => {
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (!token) {
-          console.log('No token found, skipping favorite recipes fetch');
-          return;
-        }
-        
-        const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        
-        const data = await response.json();
-        console.log('Favorites API response:', data);
-        
-        if (response.ok && data.status === 'success') {
-          const recipes = data.recipes || [];
-          console.log('Setting favorite recipes:', recipes.length);
-          setFavoriteRecipes(recipes);
-        } else {
-          console.error('Failed to fetch favorites:', data);
-          setFavoriteRecipes([]);
-        }
-      } catch (error) {
-        console.error('Error fetching favorite recipes:', error);
-        setFavoriteRecipes([]);
-      }
-    };
-    const fetchCustomFavorites = async () => {
-      const userId = await AsyncStorage.getItem('currentUserId');
-      setCurrentUserId(userId);
-      const data = await AsyncStorage.getItem('favoriteRecipes');
-      if (data && userId) {
-        const customFavs = JSON.parse(data).filter((fav: any) => fav.userId === userId);
-        setCustomFavorites(customFavs);
-      } else {
-        setCustomFavorites([]);
-      }
-    };
 
     fetchCategories();
     fetchRecentRecipes();
-    fetchFavoriteRecipes();
-    fetchCustomFavorites();
   }, []);
 
-  // Helper para saber si una receta está en favoritos (API o personalizada)
-  const isRecipeFavorite = (recipeId: string) => {
-    if (favoriteRecipes.some((r: any) => r._id === recipeId)) return true;
-    if (customFavorites.some((r: any) => r._id === recipeId && r.userId === currentUserId)) return true;
-    return false;
-  };
+  useEffect(() => {
+    const fetchTopFavorites = async () => {
+      if (favoriteIds.size === 0) {
+        setTopFavoriteRecipes([]);
+        return;
+      }
+      try {
+        // Tomamos hasta 3 IDs de los favoritos del contexto
+        const ids = Array.from(favoriteIds).slice(0, 3).join(',');
+        if (!ids) return;
+
+        const response = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies?ids=${ids}`);
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+          setTopFavoriteRecipes(data.payload || []);
+        } else {
+          setTopFavoriteRecipes([]);
+        }
+      } catch (error) {
+        console.error('Error fetching top favorites:', error);
+        setTopFavoriteRecipes([]);
+      }
+    };
+
+    fetchTopFavorites();
+  }, [favoriteIds]);
 
   const handleCardPress = (id: string) => {
     console.log(`Recipe card ${id} pressed`);
     // Lógica para navegar a la pantalla de detalles de la receta
   };
-
-  // Unifica favoritos normales y personalizados para 'Tus favoritas'
-  const allFavorites = [
-    ...favoriteRecipes,
-    ...customFavorites.filter(
-      (custom) => !favoriteRecipes.some((api) => api._id === custom._id)
-    ),
-  ];
-  const topFavorites = allFavorites.slice(0, 3);
 
   return (
     <>
@@ -178,7 +142,7 @@ export default function HomeScreen() {
                 imageUrl={recipe.imageUrl}
                 rating={recipe.rating}
                 onToggleFavorite={() => toggleFavorite(recipe.id)}
-                isFavorite={isRecipeFavorite(recipe.id)}
+                isFavorite={isFavorite(recipe.id)}
                 userRole={userRole}
               />
             ))}
@@ -212,7 +176,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {topFavorites.map((recipe) => (
+            {topFavoriteRecipes.map((recipe) => (
               <RecipeCard
                 key={recipe._id}
                 id={recipe._id}

@@ -56,10 +56,19 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        body: method === 'POST' ? JSON.stringify({}) : undefined,
       });
-      const data = await response.json();
-      if (response.ok && data.status === 'success') {
-        // Actualizar localmente
+
+      if (response.ok) {
+        if (method === 'POST') {
+          const data = await response.json();
+          if (!(data.status === 'success' || data.status === 'created')) {
+            console.error('Error al agregar favorito (respuesta del servidor):', data);
+            alert('Error al agregar favorito');
+            return;
+          }
+        }
+        
         setFavoriteIds(prev => {
           const newSet = new Set(prev);
           if (isFav) {
@@ -70,9 +79,12 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return newSet;
         });
       } else {
+        const errorData = await response.json().catch(() => ({ message: 'No se pudo leer el error' }));
+        console.error('Error al actualizar favorito (respuesta del servidor):', errorData);
         alert('Error al actualizar favorito');
       }
     } catch (e) {
+      console.error('Error de red al actualizar favorito:', e);
       alert('Error de red al actualizar favorito');
     }
   }, [favoriteIds]);
