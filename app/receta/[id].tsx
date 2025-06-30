@@ -73,6 +73,7 @@ export default function RecipePage() {
   const [customBaseIngredients, setCustomBaseIngredients] = useState<Ingredient[] | null>(null);
   const userRole = useUserRole();
   const { isFavorite: contextIsFavorite, toggleFavorite } = useFavorite();
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   // Safe back navigation
   const handleBack = () => {
@@ -630,14 +631,21 @@ export default function RecipePage() {
       ))}
 
       {/* Button to open rating modal */}
-      <TouchableOpacity
-        style={styles.evalBtn}
-        onPress={() => setShowRatingModal(true)}
-      >
-        <Text style={styles.evalBtnText}>
-          Evaluar Receta
-        </Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8, justifyContent: 'flex-start', paddingHorizontal: 16 }}>
+        <TouchableOpacity
+          style={[styles.favoriteBtn, { backgroundColor: '#E8F5E8', marginRight: 8 }]}
+          onPress={() => {
+            if (userRole === 'guest') {
+              setShowGuestModal(true);
+            } else {
+              setShowRatingModal(true);
+            }
+          }}
+        >
+          <Ionicons name="star-outline" size={20} color="#025E45" />
+          <Text style={{ color: '#025E45', marginLeft: 4 }}>Evaluar receta</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Verified comments */}
       <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Comentarios</Text>
@@ -752,6 +760,40 @@ export default function RecipePage() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleEditIngredient}>
                 <Text style={{ color: '#fff' }}>Actualizar receta</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal para guest */}
+      <Modal
+        visible={showGuestModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGuestModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, alignItems: 'center', width: 300 }}>
+            <Ionicons name="lock-closed-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#025E45', marginBottom: 12, textAlign: 'center' }}>
+              Para evaluar receta debes iniciar sesión
+            </Text>
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <TouchableOpacity
+                style={{ backgroundColor: '#ccc', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginRight: 12 }}
+                onPress={() => setShowGuestModal(false)}
+              >
+                <Text style={{ color: '#333', fontWeight: 'bold' }}>Cerrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: '#025E45', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 }}
+                onPress={() => {
+                  setShowGuestModal(false);
+                  router.push('/login');
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Iniciar sesión</Text>
               </TouchableOpacity>
             </View>
           </View>
