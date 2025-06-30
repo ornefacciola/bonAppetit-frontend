@@ -236,7 +236,7 @@ export default function CargarRecetaModal() {
     formData.append('ingredients', JSON.stringify(ingredientes));
     formData.append('stepsList', JSON.stringify(pasos.map(({ descripcion }) => ({ descripcion }))));
     formData.append('aditionalMedia', JSON.stringify([]));
-
+ /*
     if (fotoFinal) {
       formData.append('image', {
         uri: fotoFinal,
@@ -244,7 +244,7 @@ export default function CargarRecetaModal() {
         name: `foto_${Date.now()}.jpg`,
       } as any);
     }
-
+*/
     const response = await axios.post('https://bon-appetit-production.up.railway.app/api/recipies', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
