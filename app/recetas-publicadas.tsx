@@ -2,6 +2,7 @@ import RecipeCard from '@/components/receta/RecipeCard';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -22,11 +23,8 @@ export default function PerfilRecetasPublicadas() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isFavorite, toggleFavorite } = useFavorite();
+  const { isFavorite, toggleFavorite, refreshFavorites } = useFavorite();
   const userRole = useUserRole();
-  const [favoriteRecipes, setFavoriteRecipes] = useState<any[]>([]);
-  const [customFavorites, setCustomFavorites] = useState<any[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserRecipes = async () => {
@@ -62,26 +60,11 @@ export default function PerfilRecetasPublicadas() {
     fetchUserRecipes();
   }, []);
 
-  useEffect(() => {
-    const fetchCustomFavorites = async () => {
-      const userId = await AsyncStorage.getItem('currentUserId');
-      setCurrentUserId(userId);
-      const data = await AsyncStorage.getItem('favoriteRecipes');
-      if (data && userId) {
-        const customFavs = JSON.parse(data).filter((fav: any) => fav.userId === userId);
-        setCustomFavorites(customFavs);
-      } else {
-        setCustomFavorites([]);
-      }
-    };
-    fetchCustomFavorites();
-  }, []);
-
-  const isRecipeFavorite = (recipeId: string) => {
-    if (favoriteRecipes.some((r: any) => r._id === recipeId)) return true;
-    if (customFavorites.some((r: any) => r._id === recipeId && r.userId === currentUserId)) return true;
-    return false;
-  };
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshFavorites();
+    }, [refreshFavorites])
+  );
 
   if (loading) {
     return (
@@ -141,7 +124,7 @@ export default function PerfilRecetasPublicadas() {
               rating={recipe.averageRating || 0}
               onPress={() => router.push(`./receta/${recipe._id}`)}
               onToggleFavorite={() => toggleFavorite(recipe._id)}
-              isFavorite={isRecipeFavorite(recipe._id)}
+              isFavorite={isFavorite(recipe._id)}
               variant="compact"
               userRole={userRole}
             />

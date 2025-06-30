@@ -1,14 +1,15 @@
 // app/home.tsx
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Pressable,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
@@ -16,14 +17,16 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppLogo } from '@/components/ui/AppLogo';
 import { CategoryCard } from '@/components/ui/CategoryCard';
+import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import { useFavorite } from '../../contexts/FavoriteContext';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isFavorite, toggleFavorite, favoriteIds } = useFavorite();
+  const { isFavorite, toggleFavorite, favoriteIds, refreshFavorites } = useFavorite();
   const userRole = useUserRole();
+  const { token } = useAuth();
 
   const [categories, setCategories] = useState<{
     id: string;
@@ -33,6 +36,7 @@ export default function HomeScreen() {
 
   const [recentRecipes, setRecentRecipes] = useState<any[]>([]);
   const [topFavoriteRecipes, setTopFavoriteRecipes] = useState<any[]>([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -73,37 +77,50 @@ export default function HomeScreen() {
     fetchRecentRecipes();
   }, []);
 
-  useEffect(() => {
-    const fetchTopFavorites = async () => {
-      if (favoriteIds.size === 0) {
+  const fetchTopFavorites = async () => {
+    setLoadingFavorites(true);
+    try {
+      if (!token) {
         setTopFavoriteRecipes([]);
+        setLoadingFavorites(false);
         return;
       }
-      try {
-        // Tomamos hasta 3 IDs de los favoritos del contexto
-        const ids = Array.from(favoriteIds).slice(0, 3).join(',');
-        if (!ids) return;
-
-        const response = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies?ids=${ids}`);
-        const data = await response.json();
-        
-        if (response.ok && data.status === 'success') {
-          setTopFavoriteRecipes(data.payload || []);
-        } else {
-          setTopFavoriteRecipes([]);
-        }
-      } catch (error) {
-        console.error('Error fetching top favorites:', error);
+      const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 'success') {
+        // Tomar solo las primeras 3 recetas favoritas
+        setTopFavoriteRecipes((data.recipes || []).slice(0, 3));
+      } else {
         setTopFavoriteRecipes([]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching top favorites:', error);
+      setTopFavoriteRecipes([]);
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTopFavorites();
-  }, [favoriteIds]);
+  }, [token]);
 
-  const handleCardPress = (id: string) => {
-    console.log(`Recipe card ${id} pressed`);
-    // Lógica para navegar a la pantalla de detalles de la receta
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshFavorites();
+      fetchTopFavorites();
+    }, [refreshFavorites, token])
+  );
+
+  const handleToggleFavorite = async (id: string) => {
+    await toggleFavorite(id);
+    await refreshFavorites();
   };
 
   return (
@@ -141,7 +158,7 @@ export default function HomeScreen() {
                 author={recipe.author}
                 imageUrl={recipe.imageUrl}
                 rating={recipe.rating}
-                onToggleFavorite={() => toggleFavorite(recipe.id)}
+                onToggleFavorite={() => handleToggleFavorite(recipe.id)}
                 isFavorite={isFavorite(recipe.id)}
                 userRole={userRole}
               />
@@ -176,20 +193,30 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {topFavoriteRecipes.map((recipe) => (
-              <RecipeCard
-                key={recipe._id}
-                id={recipe._id}
-                title={recipe.title}
-                category={recipe.category}
-                author={recipe.user}
-                imageUrl={recipe.image_url}
-                rating={recipe.averageRating || 0}
-                isFavorite={true}
-                userRole={userRole}
-                onToggleFavorite={() => toggleFavorite(recipe._id)}
-              />
-            ))}
+            {loadingFavorites ? (
+              <View style={{ justifyContent: 'center', alignItems: 'center', height: 120 }}>
+                <Text style={{ color: '#888' }}>Cargando favoritos...</Text>
+              </View>
+            ) : topFavoriteRecipes.length === 0 ? (
+              <View style={{ justifyContent: 'center', alignItems: 'center', height: 120 }}>
+                <Text style={{ color: '#888' }}>No tienes recetas favoritas guardadas.</Text>
+              </View>
+            ) : (
+              topFavoriteRecipes.map((recipe: any) => (
+                <RecipeCard
+                  key={recipe._id}
+                  id={recipe._id}
+                  title={recipe.title}
+                  category={recipe.category}
+                  author={recipe.user}
+                  imageUrl={recipe.image_url}
+                  rating={recipe.averageRating || 0}
+                  isFavorite={true}
+                  userRole={userRole}
+                  onToggleFavorite={() => toggleFavorite(recipe._id)}
+                />
+              ))
+            )}
           </ScrollView>
           <View style={{ height: 32 }} />
         </ScrollView>
