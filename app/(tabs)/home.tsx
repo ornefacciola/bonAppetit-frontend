@@ -184,7 +184,7 @@ export default function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
+            contentContainerStyle={[styles.horizontalScroll, { marginBottom: 20 }]}
           >
             {categories.map((category) => (
               <CategoryCard
@@ -231,7 +231,7 @@ export default function HomeScreen() {
               ))
             )}
           </ScrollView>
-          <View style={{ height: 32 }} />
+          <View style={{ height: 62 }} />
         </ScrollView>
       </ThemedView>
     </>
@@ -271,10 +271,10 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#025E45',
     fontSize: 16,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   horizontalScroll: {
-    paddingBottom: 16,
-    marginBottom: 24,
+    paddingBottom: 1,
+    marginBottom: 5,
   },
 });

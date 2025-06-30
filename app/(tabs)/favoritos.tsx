@@ -321,7 +321,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   loginButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -341,7 +340,6 @@ const styles = StyleSheet.create({
     width: 28,
     alignItems: 'flex-start',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 4,
     elevation: 2,
