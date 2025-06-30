@@ -27,51 +27,55 @@ export default function ComentariosPendientes() {
           setLoading(false);
           return;
         }
-
         const userInfo = JSON.parse(userInfoString);
+        const userId = userInfo._id || userInfo.id;
         const miAlias = userInfo.alias;
-        console.log('Alias logueado:', miAlias);
+        console.log('Alias logueado:', miAlias, 'ID:', userId);
 
-        // Obtener todas las recetas
-        const resp = await fetch('https://bon-appetit-production.up.railway.app/api/recipies');
-        const data = await resp.json();
-
-        if (data.status !== 'success') {
-          setError('No se pudieron cargar las recetas');
+        // 1. Obtener info del usuario
+        const userResp = await fetch(`https://bon-appetit-production.up.railway.app/api/users/${userId}`);
+        const userData = await userResp.json();
+        console.log('User data:', userData);
+        if (userData.status !== 'success') {
+          setError('No se pudo obtener la información del usuario');
           setLoading(false);
           return;
         }
+        const favouriteRecipes = userData.user.favouriteRecipes;
+        console.log('Recetas favoritas:', favouriteRecipes);
 
-        // LOGUEAR TODAS LAS RECETAS Y RATINGS
-        console.log('RECETAS:', data.payload);
-        data.payload.forEach((receta: any) => {
-          if (receta.rating) {
-            console.log(`Ratings de receta "${receta.title}":`, receta.rating);
-          }
-        });
-
-        // Buscar todos los comentarios hechos por este usuario y pendientes
+        // 2. Buscar comentarios pendientes en recetas favoritas
         const pendientes: ComentarioPendiente[] = [];
-        data.payload.forEach((receta: any) => {
-          if (Array.isArray(receta.rating)) {
-            receta.rating.forEach((r: any) => {
-              if (
-                r.user?.toLowerCase() === miAlias?.toLowerCase() &&
-                r.comment &&
-                r.isCommentVerified === false
-              ) {
-                console.log('Encontré comentario pendiente:', r);
-                pendientes.push({
-                  recetaId: receta._id,
-                  recetaTitulo: receta.title,
-                  comentario: r.comment,
-                  fecha: r.createdAt || Date.now(),
-                });
-              }
-            });
-          }
-        });
+        for (const recetaId of favouriteRecipes) {
+          try {
+            const recetaResp = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`);
+            const recetaData = await recetaResp.json();
+            console.log('Receta data:', recetaData);
+            if (recetaData.status !== 'success') continue;
+            const receta = Array.isArray(recetaData.payload) ? recetaData.payload[0] : recetaData.payload;
 
+            if (Array.isArray(receta.rating)) {
+              receta.rating.forEach((r: any) => {
+                console.log('Rating:', r);
+                if (
+                  r.user?.toLowerCase() === miAlias?.toLowerCase() &&
+                  r.comment &&
+                  r.isCommentVerified === false
+                ) {
+                  pendientes.push({
+                    recetaId: receta._id,
+                    recetaTitulo: receta.title,
+                    comentario: r.comment,
+                    fecha: r.createdAt || Date.now(),
+                  });
+                }
+              });
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+        console.log('Pendientes encontrados:', pendientes);
         setPendientes(pendientes);
         setLoading(false);
       } catch (error) {
