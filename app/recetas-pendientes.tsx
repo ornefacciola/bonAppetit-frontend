@@ -140,7 +140,7 @@ export default function RecetasPendientes() {
               imageUrl={recipe.image_url}
               rating={recipe.averageRating || 0}
               onPress={() => router.push(`./receta/${recipe._id}`)}
-              onToggleFavorite={() => toggleFavorite(recipe._id)}
+              onToggleFavorite={() => {}}
               isFavorite={isRecipeFavorite(recipe._id)}
               variant="compact"
               userRole={userRole}

@@ -123,6 +123,18 @@ export default function HomeScreen() {
     await refreshFavorites();
   };
 
+  const handleRemoveFavoriteCard = async (id: string) => {
+    // Marca la card como en proceso de eliminación (para opacidad)
+    setTopFavoriteRecipes(prev => prev.map(recipe =>
+      recipe._id === id ? { ...recipe, _removing: true } : recipe
+    ));
+    setTimeout(async () => {
+      setTopFavoriteRecipes(prev => prev.filter(recipe => recipe._id !== id));
+      await toggleFavorite(id);
+      await refreshFavorites();
+    }, 400);
+  };
+
   return (
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
@@ -203,18 +215,19 @@ export default function HomeScreen() {
               </View>
             ) : (
               topFavoriteRecipes.map((recipe: any) => (
-                <RecipeCard
-                  key={recipe._id}
-                  id={recipe._id}
-                  title={recipe.title}
-                  category={recipe.category}
-                  author={recipe.user}
-                  imageUrl={recipe.image_url}
-                  rating={recipe.averageRating || 0}
-                  isFavorite={true}
-                  userRole={userRole}
-                  onToggleFavorite={() => toggleFavorite(recipe._id)}
-                />
+                <View key={recipe._id} style={recipe._removing ? { opacity: 0.5 } : undefined}>
+                  <RecipeCard
+                    id={recipe._id}
+                    title={recipe.title}
+                    category={recipe.category}
+                    author={recipe.user}
+                    imageUrl={recipe.image_url}
+                    rating={recipe.averageRating || 0}
+                    isFavorite={true}
+                    userRole={userRole}
+                    onToggleFavorite={() => handleRemoveFavoriteCard(recipe._id)}
+                  />
+                </View>
               ))
             )}
           </ScrollView>
