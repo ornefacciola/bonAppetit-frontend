@@ -40,7 +40,8 @@ const styles = StyleSheet.create({
     width: 118, // Adjust width as needed
     height:140,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
+    overflow:'hidden',
     paddingVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -62,7 +63,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
     textAlign: 'center',
   },
