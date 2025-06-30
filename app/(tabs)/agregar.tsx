@@ -8,6 +8,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+    Pressable,
     StatusBar,
     StyleSheet,
     Text,
@@ -26,7 +27,9 @@ export default function Agregar() {
         <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
         <ThemedView style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
           {/* Logo */}
-          <AppLogo width={150} height={72} style={styles.logo} />
+          <Pressable onPress={() => router.push('/(tabs)/home')}>
+            <AppLogo width={150} height={72} style={styles.logo} />
+          </Pressable>
 
           <SearchBar 
             value={searchText}

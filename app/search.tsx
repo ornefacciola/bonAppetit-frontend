@@ -3,11 +3,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
@@ -160,7 +161,9 @@ export default function SearchScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <AppLogo width={150} height={72} marginBottom={24} />
+            <Pressable onPress={() => router.push('/(tabs)/home')}>
+                <AppLogo width={150} height={72} marginBottom={24} />
+            </Pressable>
             <View style={styles.header}>
                 <Ionicons name="arrow-back" size={24} onPress={() => router.back()} />
                 <Text style={styles.title}>Buscador</Text>

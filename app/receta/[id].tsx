@@ -7,6 +7,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Text
 
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
+import { AppLogo } from '@/components/ui/AppLogo';
 import SuccessModal from '@/components/ui/SuccessModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -466,11 +467,9 @@ export default function RecipePage() {
           <Ionicons name="arrow-back" size={28} color="#025E45" />
         </TouchableOpacity>
         <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/bon-appetit-logo.svg')}
-            style={styles.logo}
-            contentFit="contain"
-          />
+          <Pressable onPress={() => router.push('/(tabs)/home')}>
+            <AppLogo width={150} height={41} style={{ alignSelf: 'center' }} />
+          </Pressable>
         </View>
         <View style={{ width: 28 }} />
       </View>

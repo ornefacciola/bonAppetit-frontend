@@ -3,12 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+    Pressable,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
@@ -146,7 +147,9 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ThemedView style={styles.container}>
         {/* Logo */}
-        <AppLogo width={150} height={72} marginBottom={24} />
+        <Pressable onPress={() => router.push('/(tabs)/home')}>
+          <AppLogo width={150} height={72} marginBottom={24} />
+        </Pressable>
 
         {/* Search bar */}
         <TouchableOpacity style={styles.searchContainer} onPress={() => router.push('/search')}>

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Recipe {
   _id: string;
@@ -175,7 +175,9 @@ export default function FavoritosScreen() {
           <Ionicons name="arrow-back" size={28} color="#025E45" />
         </TouchableOpacity>
         <View style={styles.logoContainer}>
-          <AppLogo width={140} height={41} style={{ alignSelf: 'center' }} />
+          <Pressable onPress={() => router.push('/(tabs)/home')}>
+            <AppLogo width={140} height={41} style={{ alignSelf: 'center' }} />
+          </Pressable>
         </View>
         <View style={{ width: 28 }} />
       </View>

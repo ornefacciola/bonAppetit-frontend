@@ -8,7 +8,7 @@ import { OrderModal } from '@/components/ui/OrderModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { FlatList, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFavorite } from '../contexts/FavoriteContext';
 
 const ORDER_OPTIONS = [
@@ -84,7 +84,9 @@ export default function SearchByCategoryScreen() {
             <Ionicons name="arrow-back" size={28} color="#025E45" />
           </TouchableOpacity>
           <View style={styles.logoContainer}>
-            <AppLogo width={150} height={72} style={{ alignSelf: 'center' }} />
+            <Pressable onPress={() => router.push('/(tabs)/home')}>
+              <AppLogo width={150} height={72} style={{ alignSelf: 'center' }} />
+            </Pressable>
           </View>
           <View style={{ width: 28 }} />
         </View>
