@@ -3,12 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
@@ -16,12 +16,14 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppLogo } from '@/components/ui/AppLogo';
 import { CategoryCard } from '@/components/ui/CategoryCard';
+import { useUserRole } from '@/hooks/useUserRole';
 import { IconSymbol } from '../../components/ui/IconSymbol';
 import { useFavorite } from '../../contexts/FavoriteContext';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorite();
+  const userRole = useUserRole();
 
   const [categories, setCategories] = useState<{
     id: string;
@@ -77,7 +79,11 @@ export default function HomeScreen() {
     const fetchFavoriteRecipes = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
-        if (!token) return;
+        if (!token) {
+          console.log('No token found, skipping favorite recipes fetch');
+          return;
+        }
+        
         const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
           method: 'GET',
           headers: {
@@ -85,12 +91,21 @@ export default function HomeScreen() {
             'Authorization': `Bearer ${token}`,
           },
         });
+        
         const data = await response.json();
+        console.log('Favorites API response:', data);
+        
         if (response.ok && data.status === 'success') {
-          setFavoriteRecipes(data.recipes || []);
+          const recipes = data.recipes || [];
+          console.log('Setting favorite recipes:', recipes.length);
+          setFavoriteRecipes(recipes);
+        } else {
+          console.error('Failed to fetch favorites:', data);
+          setFavoriteRecipes([]);
         }
-      } catch (e) {
-        // handle error
+      } catch (error) {
+        console.error('Error fetching favorite recipes:', error);
+        setFavoriteRecipes([]);
       }
     };
 
@@ -139,6 +154,7 @@ export default function HomeScreen() {
                 rating={recipe.rating}
                 onToggleFavorite={() => toggleFavorite(recipe.id)}
                 isFavorite={isFavorite(recipe.id)}
+                userRole={userRole}
               />
             ))}
           </ScrollView>
@@ -172,20 +188,22 @@ export default function HomeScreen() {
             contentContainerStyle={styles.horizontalScroll}
           >
             {favoriteRecipes
+              .filter(recipe => recipe && recipe._id && recipe.title)
               .slice()
-              .sort((a, b) => a.title.localeCompare(b.title))
+              .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
               .slice(0, 3)
               .map((recipe) => (
                 <RecipeCard
                   key={recipe._id}
                   id={recipe._id}
-                  title={recipe.title}
-                  category={recipe.category}
-                  author={recipe.user}
-                  imageUrl={recipe.image_url}
-                  rating={recipe.averageRating || 0}
+                  title={recipe.title || 'Sin título'}
+                  category={recipe.category || 'Sin categoría'}
+                  author={recipe.user || recipe.author || 'Usuario desconocido'}
+                  imageUrl={recipe.image_url || recipe.imageUrl || ''}
+                  rating={recipe.averageRating || recipe.rating || 0}
                   onToggleFavorite={() => toggleFavorite(recipe._id)}
                   isFavorite={isFavorite(recipe._id)}
+                  userRole={userRole}
                 />
               ))}
           </ScrollView>

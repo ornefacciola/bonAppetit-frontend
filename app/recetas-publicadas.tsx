@@ -1,4 +1,5 @@
 import RecipeCard from '@/components/receta/RecipeCard';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -22,6 +23,7 @@ export default function PerfilRecetasPublicadas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isFavorite, toggleFavorite } = useFavorite();
+  const userRole = useUserRole();
 
   useEffect(() => {
     const fetchUserRecipes = async () => {
@@ -117,6 +119,7 @@ export default function PerfilRecetasPublicadas() {
               onToggleFavorite={() => toggleFavorite(recipe._id)}
               isFavorite={isFavorite(recipe._id)}
               variant="compact"
+              userRole={userRole}
             />
           ))
         )}

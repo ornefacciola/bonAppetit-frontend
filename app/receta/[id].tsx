@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
+import SuccessModal from '@/components/ui/SuccessModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 
@@ -52,7 +54,6 @@ export default function RecipePage() {
   const router = useRouter();
   const navigation = useNavigation();
   const { token } = useAuth();
-  const userRole = useUserRole();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,17 +61,15 @@ export default function RecipePage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isCustomFavorite, setIsCustomFavorite] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [showGuestProtectionModal, setShowGuestProtectionModal] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedIngredientIdx, setSelectedIngredientIdx] = useState<number | null>(null);
   const [editQuantity, setEditQuantity] = useState<string>('');
   const [adjustedIngredients, setAdjustedIngredients] = useState<Ingredient[]>([]);
   const [hasCustom, setHasCustom] = useState(false);
   const [isPersonalized, setIsPersonalized] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [customBaseIngredients, setCustomBaseIngredients] = useState<Ingredient[] | null>(null);
-  const [baseIngredients, setBaseIngredients] = useState<Ingredient[]>([]);
-  const [basePortions, setBasePortions] = useState<number>(1);
-  const screenWidth = Dimensions.get('window').width;
+  const userRole = useUserRole();
 
   // Safe back navigation
   const handleBack = () => {
@@ -121,28 +120,13 @@ export default function RecipePage() {
     }
   }, [recipe, isPersonalized]);
 
-  // On recipe load, set base ingredients and portions
-  useEffect(() => {
-    if (recipe) {
-      setBaseIngredients(recipe.ingredients.map(ing => ({ ...ing })));
-      setBasePortions(recipe.portions || 1);
-      setPortions(recipe.portions || 1);
-      setAdjustedIngredients(recipe.ingredients.map(ing => ({ ...ing })));
-    }
-  }, [recipe]);
-
   // When loading a favorite, set both base and portions
   useEffect(() => {
     if (params && params.favoriteData) {
       const favData = JSON.parse(params.favoriteData as string);
-      console.log('Loading savedPortions:', favData.savedPortions);
-
       setIsPersonalized(true);
       setCustomBaseIngredients(favData.ingredients);
-      // Set the saved portions from the favorite
-      setPortions(favData.savedPortions || 1);
-      // Set the adjusted ingredients directly from the favorite
-      setAdjustedIngredients(favData.ingredients);
+      setPortions(favData.savedPortions);
     } else {
       setIsPersonalized(false);
       setCustomBaseIngredients(null);
@@ -150,35 +134,22 @@ export default function RecipePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
-  // When loading a custom favorite, restore base and adjusted state
-  useEffect(() => {
-    if (params && params.favoriteData) {
-      const favData = JSON.parse(params.favoriteData as string);
-      setBaseIngredients(favData.ingredients.map(ing => ({ ...ing })));
-      setBasePortions(favData.savedPortions || 1);
-      setPortions(favData.savedPortions || 1);
-      setAdjustedIngredients(favData.ingredients.map(ing => ({ ...ing })));
-    }
-  }, [params.id]);
-
-  // Recalculate adjustedIngredients when base or portions changes (only for non-personalized recipes)
+  // Recalculate adjustedIngredients when base or portions changes
   useEffect(() => {
     if (isPersonalized && customBaseIngredients) {
-      // For personalized recipes, use the saved portions as the base
-      const basePortions = recipe?.portions || 1;
-      const factor = portions / basePortions;
+      // Use the saved portions as base
       setAdjustedIngredients(
-        customBaseIngredients.map(ing => ({
+        customBaseIngredients.map((ing: Ingredient) => ({
           ...ing,
           quantity: typeof ing.quantity === 'number'
-            ? +(ing.quantity as number) * factor
-            : ing.quantity
+          ? +(ing.quantity as number) * (portions / (customBaseIngredients.length > 0 ? portions : 1))
+          : ing.quantity
         }))
       );
     } else if (recipe && !isPersonalized) {
       const factor = portions / (recipe.portions || 1);
       setAdjustedIngredients(
-        recipe.ingredients.map(ing => ({
+        recipe.ingredients.map((ing: Ingredient) => ({
           ...ing,
           quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
         }))
@@ -196,117 +167,122 @@ export default function RecipePage() {
 
   useEffect(() => {
     const checkIfFavorite = async () => {
-      if (!recipe || !token) return;
+      if (!recipe) return;
       
+      let isFav = false;
+      let isCustom = false;
+
+      // 1. Verificar favoritos personalizados en AsyncStorage (solo del usuario actual)
       try {
-        const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
-          method: 'GET',
+        const currentUserId = await AsyncStorage.getItem('currentUserId');
+        const data = await AsyncStorage.getItem('favoriteRecipes');
+        let favs = data ? JSON.parse(data) : [];
+        const customFav = favs.find((r: any) => 
+          r._id === recipe._id && 
+          JSON.stringify(r.ingredients) === JSON.stringify(adjustedIngredients) &&
+          (r.userId === currentUserId || !r.userId) // Compatibilidad con favoritos antiguos
+        );
+        if (customFav) {
+          isFav = true;
+          isCustom = true;
+        }
+      } catch (error) {
+        console.error('Error checking custom favorites:', error);
+      }
+
+      // 2. Si no es favorito personalizado, verificar favoritos del backend
+      if (!isFav && token) {
+        try {
+          const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          const data = await response.json();
+          if (response.ok && data.status === 'success') {
+            const apiFav = data.recipes?.find((r: any) => r._id === recipe._id);
+            if (apiFav) {
+              isFav = true;
+              isCustom = false;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking API favorites:', error);
+        }
+      }
+
+      setIsFavorite(isFav);
+      setIsCustomFavorite(isCustom);
+    };
+    checkIfFavorite();
+  }, [recipe, adjustedIngredients, token]);
+
+  const handleFavorite = async () => {
+    if (!recipe || !token) return;
+    
+    try {
+      if (isFavorite) {
+        // Eliminar favorito
+        if (isCustomFavorite) {
+          // Eliminar favorito personalizado
+          const data = await AsyncStorage.getItem('favoriteRecipes');
+          let favs = data ? JSON.parse(data) : [];
+          favs = favs.filter((r: any) => !(r._id === recipe._id && JSON.stringify(r.ingredients) === JSON.stringify(adjustedIngredients)));
+          await AsyncStorage.setItem('favoriteRecipes', JSON.stringify(favs));
+        } else {
+          // Eliminar favorito del backend
+          const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (!response.ok) {
+            throw new Error('Failed to remove from backend');
+          }
+        }
+        setIsFavorite(false);
+        setIsCustomFavorite(false);
+      } else {
+        // Agregar favorito normal al backend
+        const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
         });
-
-        const data = await response.json();
-        
-        if (response.ok && data.status === 'success') {
-          const isFav = data.recipies?.some((fav: any) => fav._id === recipe._id);
-          setIsFavorite(!!isFav);
+        if (response.ok) {
+          setIsFavorite(true);
+          setIsCustomFavorite(false);
+        } else {
+          throw new Error('Failed to add to backend');
         }
-      } catch (error) {
-        console.error('Error checking favorite status:', error);
-      }
-    };
-    checkIfFavorite();
-  }, [recipe, token]);
-
-  const handleAddFavorite = async () => {
-    if (!recipe || !token) return;
-    console.log('TOKEN AGREGAR FAVORITO:', token);
-    
-    try {
-      const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log('RESPUESTA AGREGAR FAVORITO:', data);
-
-      if (response.ok && data.status === 'success') {
-        setIsFavorite(true);
-        Alert.alert('Éxito', 'Receta agregada a favoritos');
-      } else {
-        setIsFavorite(false);
-        Alert.alert('Error', data.error || 'Error al agregar a favoritos');
       }
     } catch (error) {
-      setIsFavorite(false);
-      Alert.alert('Error', 'Error de conexión al agregar favorito');
-    }
-  };
-
-  const handleRemoveFavorite = async () => {
-    if (!recipe || !token) return;
-    console.log('TOKEN ELIMINAR FAVORITO:', token);
-    
-    try {
-      const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log('RESPUESTA ELIMINAR FAVORITO:', data);
-      
-      if (response.ok && data.status === 'success') {
-        setIsFavorite(false);
-        Alert.alert('Éxito', 'Receta eliminada de favoritos');
-        // Si vino de favoritos, volver atrás
-        if (params && params.fromFavorites) {
-          router.back();
-        }
-      } else {
-        console.error('Error removing favorite:', data);
-        Alert.alert('Error', data.message || 'Error al eliminar de favoritos');
-      }
-    } catch (error) {
-      console.error('Error removing favorite:', error);
-      Alert.alert('Error', 'Error de conexión al eliminar favorito');
+      console.error('Error toggling favorite:', error);
+      alert('Error al actualizar favorito');
     }
   };
 
   const handlePortionChange = (delta: number) => {
-    const newPortions = Math.max(1, portions + delta);
-    const factor = newPortions / basePortions;
-    setPortions(newPortions);
-    setAdjustedIngredients(
-      baseIngredients.map(ing => ({
-        ...ing,
-        quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
-      }))
-    );
+    setPortions(prev => Math.max(1, prev + delta));
   };
 
-  // Edit ingredient and update portions and all ingredients
+  // Lógica para editar un ingrediente y recalcular el resto
   const handleEditIngredient = () => {
-    if (selectedIngredientIdx === null || !editQuantity) return;
-    const originalQty = typeof baseIngredients[selectedIngredientIdx].quantity === 'number'
-      ? baseIngredients[selectedIngredientIdx].quantity
-      : parseFloat(baseIngredients[selectedIngredientIdx].quantity as string);
+    if (selectedIngredientIdx === null || !editQuantity || !recipe) return;
+    const original = recipe.ingredients[selectedIngredientIdx];
+    const originalQty = typeof original.quantity === 'number' ? original.quantity : parseFloat(original.quantity as string);
     const newQty = parseFloat(editQuantity);
     if (!originalQty || !newQty) return;
     const factor = newQty / originalQty;
-    const newPortions = Math.round(basePortions * factor);
-    setPortions(newPortions);
     setAdjustedIngredients(
-      baseIngredients.map(ing => ({
+      recipe.ingredients.map((ing: Ingredient) => ({
         ...ing,
         quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
       }))
@@ -328,6 +304,85 @@ export default function RecipePage() {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  // Guardar receta personalizada en favoritos (reemplaza si ya existe)
+  const handleSaveCustomFavorite = async () => {
+    if (!recipe) return;
+    try {
+      const currentUserId = await AsyncStorage.getItem('currentUserId');
+      if (!currentUserId) {
+        alert('Error: No se pudo identificar al usuario');
+        return;
+      }
+
+      const data = await AsyncStorage.getItem('favoriteRecipes');
+      let favs = data ? JSON.parse(data) : [];
+      // No guardar más de 10 (excepto si reemplaza una existente)
+      const existsIdx = favs.findIndex((r: any) => r._id === recipe._id && r.customized && r.userId === currentUserId);
+      const customFavorite = { 
+        ...recipe, 
+        ingredients: adjustedIngredients, 
+        customized: true, 
+        savedPortions: portions,
+        userId: currentUserId // Agregar ID del usuario actual
+      };
+      if (existsIdx !== -1) {
+        favs[existsIdx] = customFavorite;
+      } else {
+        if (favs.length >= 10) {
+          setShowSuccessModal(false);
+          return alert('Solo puedes guardar hasta 10 recetas favoritas personalizadas.');
+        }
+        favs.push(customFavorite);
+      }
+      await AsyncStorage.setItem('favoriteRecipes', JSON.stringify(favs));
+      setShowSuccessModal(true);
+    } catch (e) {
+      alert('Error al guardar la receta.');
+    }
+  };
+
+  // Eliminar de favoritos (usado cuando viene de favoritos)
+  const handleRemoveFavorite = async () => {
+    if (!recipe) return;
+    try {
+      if (isCustomFavorite) {
+        // Eliminar favorito personalizado - solo del usuario actual
+        const currentUserId = await AsyncStorage.getItem('currentUserId');
+        const data = await AsyncStorage.getItem('favoriteRecipes');
+        let favs = data ? JSON.parse(data) : [];
+        favs = favs.filter((r: any) => !(
+          r._id === recipe._id && 
+          JSON.stringify(r.ingredients) === JSON.stringify(adjustedIngredients) &&
+          (r.userId === currentUserId || !r.userId) // Compatibilidad con favoritos antiguos
+        ));
+        await AsyncStorage.setItem('favoriteRecipes', JSON.stringify(favs));
+      } else {
+        // Eliminar favorito del backend
+        if (token) {
+          const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (!response.ok) {
+            throw new Error('Failed to remove from backend');
+          }
+        }
+      }
+      setIsFavorite(false);
+      setIsCustomFavorite(false);
+      // Si vino de favoritos, volver atrás
+      if (params && params.fromFavorites) {
+        router.back();
+      }
+    } catch (e) {
+      console.error('Error removing favorite:', e);
+      alert('Error al eliminar favorito');
+    }
   };
 
   // Submit rating and comment to backend
@@ -376,14 +431,6 @@ export default function RecipePage() {
     } catch (error) {
       console.error('Error submitting rating:', error);
       throw error;
-    }
-  };
-
-  const handleEvaluateRecipe = () => {
-    if (userRole === 'guest') {
-      setShowGuestProtectionModal(true);
-    } else {
-      setShowRatingModal(true);
     }
   };
 
@@ -445,12 +492,14 @@ export default function RecipePage() {
             style={{ marginLeft: 2 }}
           />
           <View style={styles.favoriteRow}>
-            <TouchableOpacity
-              style={styles.favoriteBtn}
-              onPress={isFavorite ? handleRemoveFavorite : handleAddFavorite}
-            >
-              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={isFavorite ? '#FF6347' : '#888'} />
-            </TouchableOpacity>
+            {userRole !== 'guest' && (
+              <TouchableOpacity
+                style={styles.favoriteBtn}
+                onPress={handleFavorite}
+              >
+                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={isFavorite ? '#FF6347' : '#888'} />
+              </TouchableOpacity>
+            )}
             {isCustomFavorite && (
               <View style={styles.customizedTagRight}>
                 <Ionicons name="construct" size={16} color="#025E45" />
@@ -461,31 +510,13 @@ export default function RecipePage() {
         </View>
       </View>
 
-      {/* Main image carousel */}
-      {recipe.image_url || (recipe.aditionalMedia && recipe.aditionalMedia.length > 0) ? (
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          style={{ width: '100%', height: 220, marginVertical: 12 }}
-        >
-          {[
-            ...(recipe.image_url ? [recipe.image_url] : []),
-            ...(recipe.aditionalMedia || [])
-          ].map((img, idx) => (
-            <Image
-              key={idx}
-              source={{ uri: img }}
-              style={{
-                width: screenWidth * 0.9,
-                height: 220,
-                borderRadius: 12,
-                marginHorizontal: screenWidth * 0.05,
-              }}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
+      {/* Main image */}
+      {recipe.image_url ? (
+        <Image
+          source={{ uri: recipe.image_url }}
+          style={styles.mainImage}
+          contentFit="cover"
+        />
       ) : (
         <Text
           style={{ textAlign: 'center', color: '#999', marginVertical: 16 }}
@@ -499,12 +530,14 @@ export default function RecipePage() {
         <Text style={styles.category}>
           {recipe.category}
         </Text>
-        <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => setEditModalVisible(true)}
-        >
-          <Ionicons name="pencil" size={18} color="#888" />
-        </TouchableOpacity>
+        {!isPersonalized && (
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => setEditModalVisible(true)}
+          >
+            <Ionicons name="pencil" size={18} color="#888" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Ingredients */}
@@ -518,26 +551,30 @@ export default function RecipePage() {
         <Text style={styles.portionText}>
           {portions} porcion{portions > 1 ? 'es' : ''}
         </Text>
-        <TouchableOpacity
-          style={styles.portionBtn}
-          onPress={() => handlePortionChange(-1)}
-        >
-          <Ionicons
-            name="remove-circle-outline"
-            size={22}
-            color="#025E45"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.portionBtn}
-          onPress={() => handlePortionChange(1)}
-        >
-          <Ionicons
-            name="add-circle-outline"
-            size={22}
-            color="#025E45"
-          />
-        </TouchableOpacity>
+        {!isPersonalized && (
+          <>
+            <TouchableOpacity
+              style={styles.portionBtn}
+              onPress={() => handlePortionChange(-1)}
+            >
+              <Ionicons
+                name="remove-circle-outline"
+                size={22}
+                color="#025E45"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.portionBtn}
+              onPress={() => handlePortionChange(1)}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={22}
+                color="#025E45"
+              />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
       <View style={styles.ingredientBox}>
         {adjustedIngredients.map((ing, idx) => (
@@ -549,6 +586,27 @@ export default function RecipePage() {
           </Text>
         ))}
       </View>
+
+      {/* Botón guardar favorito personalizado */}
+      {hasCustom && (
+        <TouchableOpacity
+          style={[styles.saveCustomBtn, userRole === 'guest' && { backgroundColor: '#ccc' }]}
+          onPress={userRole === 'guest' ? undefined : handleSaveCustomFavorite}
+          disabled={userRole === 'guest'}
+        >
+          <Ionicons name="heart" size={18} color="#fff" />
+          <Text style={styles.saveCustomBtnText}>
+            Guardar en favoritos "A tu gusto"
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="¡Bien hecho!"
+        message="Tu receta fue modificada a tu gusto y la podés ver en tus favoritos."
+      />
 
       {/* Steps */}
       <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Paso a paso</Text>
@@ -573,7 +631,7 @@ export default function RecipePage() {
       {/* Button to open rating modal */}
       <TouchableOpacity
         style={styles.evalBtn}
-        onPress={handleEvaluateRecipe}
+        onPress={() => setShowRatingModal(true)}
       >
         <Text style={styles.evalBtnText}>
           Evaluar Receta
@@ -653,42 +711,6 @@ export default function RecipePage() {
         recipeTitle={recipe.title}
         onSubmit={handleSubmitRating}
       />
-
-      {/* Modal de protección para guests */}
-      <Modal
-        visible={showGuestProtectionModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowGuestProtectionModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }}>
-              Debes iniciar sesión
-            </Text>
-            <Text style={{ fontSize: 16, color: '#666', marginBottom: 24, textAlign: 'center' }}>
-              Para evaluar recetas necesitas tener una cuenta registrada.
-            </Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <TouchableOpacity 
-                style={[styles.cancelBtn, { flex: 1, marginRight: 8 }]} 
-                onPress={() => setShowGuestProtectionModal(false)}
-              >
-                <Text style={{ color: '#fff', textAlign: 'center' }}>Cerrar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.saveBtn, { flex: 1, marginLeft: 8 }]} 
-                onPress={() => {
-                  setShowGuestProtectionModal(false);
-                  router.replace('/');
-                }}
-              >
-                <Text style={{ color: '#fff', textAlign: 'center' }}>Iniciar sesión</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Modal para editar ingrediente */}
       <Modal
@@ -1001,6 +1023,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 18,
   },
+  saveCustomBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#025E45',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  saveCustomBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 15,
+  },
   favoriteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1021,4 +1060,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 12,
   },
-});
+}); 

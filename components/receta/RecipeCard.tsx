@@ -4,9 +4,8 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { useUserRole } from '@/hooks/useUserRole';
 
-interface RecipeCardProps {
+export interface RecipeCardProps {
   id: string;
   title: string;
   category: string;
@@ -17,6 +16,7 @@ interface RecipeCardProps {
   onToggleFavorite: (id: string) => void;
   isFavorite: boolean;
   variant?: 'default' | 'compact';
+  userRole?: string | null;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -30,10 +30,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   onToggleFavorite,
   isFavorite,
   variant = 'default', // valor por defecto
+  userRole,
 }) => {
   const router = useRouter();
-  const userRole = useUserRole();
   const isCompact = variant === 'compact';
+
+  // Debug: log del userRole
+  console.log('RecipeCard userRole:', userRole, 'isGuest:', userRole === 'guest');
 
   const handlePress = () => {
     if (onPress) {
@@ -51,11 +54,17 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       style={[styles.card, isCompact && styles.cardCompact]}
       onPress={handlePress}
     >
-      <Image
-        source={{ uri: imageUrl }}
-        style={[styles.image, isCompact && styles.imageCompact]}
-        contentFit="cover"
-      />
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={[styles.image, isCompact && styles.imageCompact]}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[styles.image, isCompact && styles.imageCompact, styles.noImage]}>
+          <Ionicons name="restaurant-outline" size={48} color="#ccc" />
+        </View>
+      )}
       {userRole !== 'guest' && (
         <TouchableOpacity
           style={styles.favoriteButton}
@@ -157,6 +166,11 @@ const styles = StyleSheet.create({
   author: {
     fontSize: 14,
     color: '#999',
+  },
+  noImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
   },
 });
 
