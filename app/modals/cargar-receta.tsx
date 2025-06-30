@@ -425,8 +425,8 @@ export default function CargarRecetaModal() {
           setModalExitoVisible(false);
           router.push('/(tabs)/agregar');
         }}
-        title={''}
-        message={''}
+        title={'¡Receta cargada!'}
+        message={'Tu receta se cargó correctamente y se encuentra pendiente de aprobación.'}
       />
     </KeyboardAvoidingView>
   );

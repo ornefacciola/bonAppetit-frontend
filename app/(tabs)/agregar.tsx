@@ -3,17 +3,16 @@ import { ProtectedPage } from '@/components/ProtectedPage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppLogo } from '@/components/ui/AppLogo';
-import { SearchBar } from '@/components/ui/SearchBar';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const router = useRouter();
@@ -31,11 +30,7 @@ export default function Agregar() {
             <AppLogo width={150} height={72} style={styles.logo} />
           </Pressable>
 
-          <SearchBar 
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-
+      
           {/* Botón */}
           <TouchableOpacity
             style={styles.button}
@@ -48,11 +43,14 @@ export default function Agregar() {
           <View style={styles.placeholderContainer}>
             <FontAwesome5 name="utensils" size={64} color="#C0C0C0" style={styles.placeholderIcon} />
             <ThemedText type="defaultSemiBold" style={styles.placeholderText}>
-              Todavía no cargaste ninguna receta
+               ¡Compartir tus recetas!
             </ThemedText>
             <ThemedText type="default" style={styles.placeholderSubText}>
-              Clickea cargar receta para comenzar
+              Tocá "Cargar Receta" para agregar una nueva.  
             </ThemedText>
+             <ThemedText type="default" style={styles.placeholderSubText}>
+            Tus recetas están en el perfil.
+          </ThemedText>
           </View>
         </ThemedView>
       </>
@@ -92,7 +90,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 32,
     alignSelf: 'center',
-    marginBottom: 40,
+    marginTop: 80,    
+    marginBottom: 24,
   },
   buttonText: {
     color: '#fff',
@@ -115,5 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9E9E9E',
     marginTop: 4,
+    textAlign: 'center',
+
   },
 });
