@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFavorite } from '../contexts/FavoriteContext';
 
 interface Recipe {
   _id: string;
@@ -20,6 +21,7 @@ export default function PerfilRecetasPublicadas() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isFavorite, toggleFavorite } = useFavorite();
 
   useEffect(() => {
     const fetchUserRecipes = async () => {
@@ -112,8 +114,8 @@ export default function PerfilRecetasPublicadas() {
               imageUrl={recipe.image_url}
               rating={recipe.averageRating || 0}
               onPress={() => router.push(`./receta/${recipe._id}`)}
-              onToggleFavorite={() => {}}
-              isFavorite={false}
+              onToggleFavorite={() => toggleFavorite(recipe._id)}
+              isFavorite={isFavorite(recipe._id)}
               variant="compact"
             />
           ))

@@ -179,7 +179,7 @@ export default function FavoritosScreen() {
         <View style={styles.topSection}>
           <Text style={styles.title}>Tus Favoritos</Text>
         </View>
-        <ScrollView>
+        <ScrollView contentContainerStyle={styles.scroll}>
           {favorites.length === 0 && (
             <View style={styles.emptyContainer}>
               <Ionicons name="heart-outline" size={64} color="#ccc" />
@@ -188,22 +188,18 @@ export default function FavoritosScreen() {
             </View>
           )}
           {favorites.map((recipe) => (
-            <View key={recipe._id} style={styles.recipeRow}>
-              <RecipeCard
-                id={recipe._id}
-                title={recipe.title}
-                category={recipe.category}
-                author={recipe.user}
-                imageUrl={recipe.image_url}
-                rating={recipe.averageRating || 0}
-                isFavorite={true}
-                onToggleFavorite={() => handleRemoveFavorite(recipe._id)}
-                onPress={() => router.push({
-                  pathname: '/receta/[id]',
-                  params: { id: recipe._id }
-                })}
-              />
-            </View>
+            <RecipeCard
+              key={recipe._id}
+              id={recipe._id}
+              title={recipe.title}
+              category={recipe.category}
+              author={recipe.user}
+              imageUrl={recipe.image_url}
+              rating={recipe.averageRating || 0}
+              isFavorite={true}
+              onToggleFavorite={() => handleRemoveFavorite(recipe._id)}
+              variant="compact"
+            />
           ))}
         </ScrollView>
       </View>
@@ -278,8 +274,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  recipeRow: {
-    marginBottom: 18,
-    position: 'relative',
+  scroll: {
+    paddingBottom: 100,
+    paddingHorizontal: 16,
   },
 }); 
