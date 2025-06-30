@@ -118,7 +118,7 @@ export default function SearchByCategoryScreen() {
 
         {/* Resultados de recetas y botón de ordenar en la misma línea */}
         {selectedCategory && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, marginTop:15 }}>
             <ThemedText style={[styles.resultsText, { marginBottom: 0 }]}>{recipes.length} Resultados</ThemedText>
             <TouchableOpacity style={{ backgroundColor: '#E5E5E5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }} onPress={() => setOrderModalVisible(true)}>
               <Text style={{ color: '#333', marginBottom: 0 }}>Ordenar ▾</Text>

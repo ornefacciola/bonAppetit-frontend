@@ -37,10 +37,11 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     marginRight: 12,
-    width: 100, // Adjust width as needed
+    width: 118, // Adjust width as needed
+    height:140,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -60,8 +61,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 14,
-    color: '#424242',
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#333',
     textAlign: 'center',
   },
   checkmarkBox: {
