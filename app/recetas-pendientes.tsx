@@ -24,6 +24,9 @@ export default function RecetasPendientes() {
   const [error, setError] = useState<string | null>(null);
   const { isFavorite, toggleFavorite } = useFavorite();
   const userRole = useUserRole();
+  const [favoriteRecipes, setFavoriteRecipes] = useState<any[]>([]);
+  const [customFavorites, setCustomFavorites] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserPendingRecipes = async () => {
@@ -58,6 +61,27 @@ export default function RecetasPendientes() {
 
     fetchUserPendingRecipes();
   }, []);
+
+  useEffect(() => {
+    const fetchCustomFavorites = async () => {
+      const userId = await AsyncStorage.getItem('currentUserId');
+      setCurrentUserId(userId);
+      const data = await AsyncStorage.getItem('favoriteRecipes');
+      if (data && userId) {
+        const customFavs = JSON.parse(data).filter((fav: any) => fav.userId === userId);
+        setCustomFavorites(customFavs);
+      } else {
+        setCustomFavorites([]);
+      }
+    };
+    fetchCustomFavorites();
+  }, []);
+
+  const isRecipeFavorite = (recipeId: string) => {
+    if (favoriteRecipes.some((r: any) => r._id === recipeId)) return true;
+    if (customFavorites.some((r: any) => r._id === recipeId && r.userId === currentUserId)) return true;
+    return false;
+  };
 
   if (loading) {
     return (
@@ -117,7 +141,7 @@ export default function RecetasPendientes() {
               rating={recipe.averageRating || 0}
               onPress={() => router.push(`./receta/${recipe._id}`)}
               onToggleFavorite={() => toggleFavorite(recipe._id)}
-              isFavorite={isFavorite(recipe._id)}
+              isFavorite={isRecipeFavorite(recipe._id)}
               variant="compact"
               userRole={userRole}
             />

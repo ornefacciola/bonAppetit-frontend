@@ -10,6 +10,7 @@ import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
 import SuccessModal from '@/components/ui/SuccessModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useFavorite } from '../../contexts/FavoriteContext';
 
 interface Ingredient {
   name: string;
@@ -58,8 +59,8 @@ export default function RecipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [portions, setPortions] = useState<number>(1);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isCustomFavorite, setIsCustomFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedIngredientIdx, setSelectedIngredientIdx] = useState<number | null>(null);
@@ -70,6 +71,7 @@ export default function RecipePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [customBaseIngredients, setCustomBaseIngredients] = useState<Ingredient[] | null>(null);
   const userRole = useUserRole();
+  const { isFavorite: contextIsFavorite, toggleFavorite } = useFavorite();
 
   // Safe back navigation
   const handleBack = () => {

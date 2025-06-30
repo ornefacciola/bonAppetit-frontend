@@ -22,7 +22,7 @@ import { useFavorite } from '../../contexts/FavoriteContext';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isFavorite, toggleFavorite } = useFavorite();
+  const { isFavorite: isFavoriteApi, toggleFavorite } = useFavorite();
   const userRole = useUserRole();
 
   const [categories, setCategories] = useState<{
@@ -31,16 +31,10 @@ export default function HomeScreen() {
     iconUrl: string;
   }[]>([]);
 
-  const [recentRecipes, setRecentRecipes] = useState<{
-    id: string;
-    title: string;
-    category: string;
-    author: string;
-    imageUrl: string;
-    rating: number;
-  }[]>([]);
-
+  const [recentRecipes, setRecentRecipes] = useState<any[]>([]);
   const [favoriteRecipes, setFavoriteRecipes] = useState<any[]>([]);
+  const [customFavorites, setCustomFavorites] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -108,16 +102,44 @@ export default function HomeScreen() {
         setFavoriteRecipes([]);
       }
     };
+    const fetchCustomFavorites = async () => {
+      const userId = await AsyncStorage.getItem('currentUserId');
+      setCurrentUserId(userId);
+      const data = await AsyncStorage.getItem('favoriteRecipes');
+      if (data && userId) {
+        const customFavs = JSON.parse(data).filter((fav: any) => fav.userId === userId);
+        setCustomFavorites(customFavs);
+      } else {
+        setCustomFavorites([]);
+      }
+    };
 
     fetchCategories();
     fetchRecentRecipes();
     fetchFavoriteRecipes();
+    fetchCustomFavorites();
   }, []);
+
+  // Helper para saber si una receta está en favoritos (API o personalizada)
+  const isRecipeFavorite = (recipeId: string) => {
+    if (favoriteRecipes.some((r: any) => r._id === recipeId)) return true;
+    if (customFavorites.some((r: any) => r._id === recipeId && r.userId === currentUserId)) return true;
+    return false;
+  };
 
   const handleCardPress = (id: string) => {
     console.log(`Recipe card ${id} pressed`);
     // Lógica para navegar a la pantalla de detalles de la receta
   };
+
+  // Unifica favoritos normales y personalizados para 'Tus favoritas'
+  const allFavorites = [
+    ...favoriteRecipes,
+    ...customFavorites.filter(
+      (custom) => !favoriteRecipes.some((api) => api._id === custom._id)
+    ),
+  ];
+  const topFavorites = allFavorites.slice(0, 3);
 
   return (
     <>
@@ -153,7 +175,7 @@ export default function HomeScreen() {
                 imageUrl={recipe.imageUrl}
                 rating={recipe.rating}
                 onToggleFavorite={() => toggleFavorite(recipe.id)}
-                isFavorite={isFavorite(recipe.id)}
+                isFavorite={isRecipeFavorite(recipe.id)}
                 userRole={userRole}
               />
             ))}
@@ -187,25 +209,20 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {favoriteRecipes
-              .filter(recipe => recipe && recipe._id && recipe.title)
-              .slice()
-              .sort((a, b) => (a.title || '').localeCompare(b.title || ''))
-              .slice(0, 3)
-              .map((recipe) => (
-                <RecipeCard
-                  key={recipe._id}
-                  id={recipe._id}
-                  title={recipe.title || 'Sin título'}
-                  category={recipe.category || 'Sin categoría'}
-                  author={recipe.user || recipe.author || 'Usuario desconocido'}
-                  imageUrl={recipe.image_url || recipe.imageUrl || ''}
-                  rating={recipe.averageRating || recipe.rating || 0}
-                  onToggleFavorite={() => toggleFavorite(recipe._id)}
-                  isFavorite={isFavorite(recipe._id)}
-                  userRole={userRole}
-                />
-              ))}
+            {topFavorites.map((recipe) => (
+              <RecipeCard
+                key={recipe._id}
+                id={recipe._id}
+                title={recipe.title}
+                category={recipe.category}
+                author={recipe.user}
+                imageUrl={recipe.image_url}
+                rating={recipe.averageRating || 0}
+                isFavorite={true}
+                userRole={userRole}
+                onToggleFavorite={() => toggleFavorite(recipe._id)}
+              />
+            ))}
           </ScrollView>
           <View style={{ height: 32 }} />
         </ScrollView>

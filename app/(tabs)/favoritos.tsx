@@ -1,4 +1,5 @@
 import RecipeCard from '@/components/receta/RecipeCard';
+import { AppLogo } from '@/components/ui/AppLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
@@ -169,8 +170,17 @@ export default function FavoritosScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tus Favoritos</Text>
-      <ScrollView>
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={28} color="#025E45" />
+        </TouchableOpacity>
+        <View style={styles.logoContainer}>
+          <AppLogo width={140} height={41} style={{ alignSelf: 'center' }} />
+        </View>
+        <View style={{ width: 28 }} />
+      </View>
+      <Text style={styles.title}>Mis favoritos</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {favorites.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="heart-outline" size={48} color="#ccc" />
@@ -199,13 +209,11 @@ export default function FavoritosScreen() {
               onToggleFavorite={() => handleRemoveFavorite(recipe._id, !!recipe.customized)}
               onPress={() => {
                 if (recipe.customized) {
-                  // Para favoritos personalizados, pasar los datos completos
                   router.push({
                     pathname: '/receta/[id]',
                     params: { id: recipe._id, favoriteData: JSON.stringify(recipe), fromFavorites: '1' }
                   });
                 } else {
-                  // Para favoritos normales, solo pasar el ID
                   router.push({
                     pathname: '/receta/[id]',
                     params: { id: recipe._id, fromFavorites: '1' }
@@ -213,6 +221,7 @@ export default function FavoritosScreen() {
                 }
               }}
               userRole={userRole}
+              variant="compact"
             />
           </View>
         ))}
@@ -233,6 +242,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#025E45',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -262,6 +272,10 @@ const styles = StyleSheet.create({
   recipeRow: {
     marginBottom: 18,
     position: 'relative',
+    width: '100%',
+    alignSelf: 'stretch',
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
   },
   customizedTagLeft: {
     position: 'absolute',
@@ -306,5 +320,34 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 24,
+    marginBottom: 4,
+  },
+  logoContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButton: {
+    width: 28,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 4,
+    elevation: 2,
+    zIndex: 2,
+    marginRight: 0,
+    left: 0,
+  },
+  scrollContent: {
+    alignItems: 'stretch',
+    paddingBottom: 32,
+    paddingHorizontal: 0,
   },
 }); 

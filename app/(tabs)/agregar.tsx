@@ -2,9 +2,9 @@
 import { ProtectedPage } from '@/components/ProtectedPage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { AppLogo } from '@/components/ui/AppLogo';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -26,11 +26,7 @@ export default function Agregar() {
         <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
         <ThemedView style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
           {/* Logo */}
-          <Image
-            source={require('@/assets/images/bon-appetit-logo.svg')}
-            style={styles.logo}
-            contentFit="contain"
-          />
+          <AppLogo width={150} height={72} style={styles.logo} />
 
           <SearchBar 
             value={searchText}

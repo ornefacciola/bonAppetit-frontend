@@ -108,7 +108,8 @@ const styles = StyleSheet.create({
   },
   cardCompact: {
     width: '100%',         // ocupa todo el ancho disponible
-    alignSelf: 'center',   // centrar si está en columna
+    alignSelf: 'stretch',  // estira la card
+    marginHorizontal: 0,   // sin margen lateral
   },
   image: {
     width: '100%',

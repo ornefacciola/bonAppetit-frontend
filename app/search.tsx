@@ -1,5 +1,6 @@
 // app/search.tsx
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
     ScrollView,
@@ -16,6 +17,7 @@ import { IngredientModal } from '@/components/ui/IngredientModal';
 import { OrderModal } from '@/components/ui/OrderModal';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SearchTabs } from '@/components/ui/SearchTabs';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useRouter } from 'expo-router';
 import { useFavorite } from '../contexts/FavoriteContext';
 
@@ -42,6 +44,10 @@ export default function SearchScreen() {
     const [excludeIngredients, setExcludeIngredients] = useState<string[]>([]);
     const [showIngredientUI, setShowIngredientUI] = useState(true);
     const { isFavorite, toggleFavorite } = useFavorite();
+    const userRole = useUserRole();
+    const [favoriteRecipes, setFavoriteRecipes] = useState<any[]>([]);
+    const [customFavorites, setCustomFavorites] = useState<any[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchIngredients = async () => {
@@ -57,6 +63,21 @@ export default function SearchScreen() {
             }
         };
         fetchIngredients();
+    }, []);
+
+    useEffect(() => {
+        const fetchCustomFavorites = async () => {
+            const userId = await AsyncStorage.getItem('currentUserId');
+            setCurrentUserId(userId);
+            const data = await AsyncStorage.getItem('favoriteRecipes');
+            if (data && userId) {
+                const customFavs = JSON.parse(data).filter((fav: any) => fav.userId === userId);
+                setCustomFavorites(customFavs);
+            } else {
+                setCustomFavorites([]);
+            }
+        };
+        fetchCustomFavorites();
     }, []);
 
     const handleIngredientSearch = (text: string) => {
@@ -130,6 +151,12 @@ export default function SearchScreen() {
 
         fetchResults();
     }, [searchText, selectedOrder, searchType]);
+
+    const isRecipeFavorite = (recipeId: string) => {
+        if (favoriteRecipes.some((r: any) => r._id === recipeId)) return true;
+        if (customFavorites.some((r: any) => r._id === recipeId && r.userId === currentUserId)) return true;
+        return false;
+    };
 
     return (
         <ThemedView style={styles.container}>
@@ -254,7 +281,8 @@ export default function SearchScreen() {
                                     author={receta.user}
                                     imageUrl={receta.image_url}
                                     rating={receta.averageRating || 0}
-                                    isFavorite={isFavorite(receta._id)}
+                                    isFavorite={isRecipeFavorite(receta._id)}
+                                    userRole={userRole}
                                     onToggleFavorite={() => toggleFavorite(receta._id)}
                                     variant="compact"
                                 />
