@@ -1,12 +1,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StatusBar, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { AppLogo } from '@/components/ui/AppLogo';
 
 interface Props {
   navigation: any;
@@ -30,11 +30,7 @@ export default function PrincipalScreen({ navigation }: Props) {
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ThemedView style={styles.container}>
-        <Image
-          source={require('@/assets/images/bon-appetit-logo.svg')}
-          style={styles.logo}
-          contentFit="contain"
-        />
+        <AppLogo width={240} height={72} style={styles.logo} />
 
         <ThemedText type="subtitle" style={styles.tagline}>
           Tu mejor recetario online
