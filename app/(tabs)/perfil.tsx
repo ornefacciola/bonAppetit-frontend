@@ -91,18 +91,6 @@ export default function PerfilScreen() {
         {/* Línea */}
         <View style={styles.divider} />
 
-        {/* Opción 3: Comentarios pendientes */}
-        <TouchableOpacity style={[styles.optionRow, {paddingLeft: 2}]}
-          onPress={() => router.push('/comentarios-pendientes')}>
-          <View style={styles.optionLeft}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="black" />
-            <Text style={styles.optionText}>Comentarios pendientes de aprobación</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="black" />
-        </TouchableOpacity> 
-
-        <View style={styles.divider} />
-
         {/* Opción 3: Cerrar sesión */}
           <TouchableOpacity style={styles.optionRow} onPress={() => router.replace('/')}>
           <View style={styles.optionLeft}>
