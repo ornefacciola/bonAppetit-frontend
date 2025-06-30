@@ -53,11 +53,12 @@ export default function PerfilScreen() {
           <Ionicons name="person" size={32} color="#fff" />
         </View>
         <View>
-          <Text style={styles.name}>Bon Appetit {userInfo?.name || 'Usuario'}!</Text>
+          <Text style={styles.name}>
+            Bon Appetit {userInfo?.name?.split(' ')[0] || 'Usuario'}!
+          </Text>
           <Text style={styles.username}>@{userInfo?.alias || 'usuario'}</Text>
         </View>
       </View>
-
       {/* Sección Perfil */}
       <Text style={styles.sectionTitle}>Perfil</Text>
 
@@ -99,6 +100,8 @@ export default function PerfilScreen() {
           </View>
           <Ionicons name="chevron-forward" size={20} color="black" />
         </TouchableOpacity> 
+
+        <View style={styles.divider} />
 
         {/* Opción 3: Cerrar sesión */}
           <TouchableOpacity style={styles.optionRow} onPress={() => router.replace('/')}>

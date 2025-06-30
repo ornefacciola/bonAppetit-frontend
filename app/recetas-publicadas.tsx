@@ -9,7 +9,7 @@ interface Recipe {
   _id: string;
   title: string;
   category: string;
-  user: string;
+  user: string | { _id?: string; alias?: string };
   image_url: string;
   averageRating: number;
   isVerificated: boolean;
@@ -24,26 +24,23 @@ export default function PerfilRecetasPublicadas() {
   useEffect(() => {
     const fetchUserRecipes = async () => {
       try {
-        // Obtener información del usuario logueado
+        // Obtener info usuario logueado
         const userInfoString = await AsyncStorage.getItem('userInfo');
         if (!userInfoString) {
           setError('No se pudo obtener la información del usuario');
           setLoading(false);
           return;
         }
-
         const userInfo = JSON.parse(userInfoString);
-        
-        // Obtener todas las recetas
-        const response = await fetch('https://bon-appetit-production.up.railway.app/api/recipies');
+
+        // Obtener solo recetas aprobadas del usuario
+        const response = await fetch(
+          `https://bon-appetit-production.up.railway.app/api/recipies?user=${userInfo.alias}&isVerificated=true`
+        );
         const data = await response.json();
-        
+
         if (data.status === 'success') {
-          // Filtrar recetas del usuario que estén verificadas (publicadas)
-          const userRecipes = data.payload.filter((recipe: Recipe) => 
-            recipe.user === userInfo.alias && recipe.isVerificated === true
-          );
-          setRecipes(userRecipes);
+          setRecipes(data.payload);
         } else {
           setError('No se pudieron cargar las recetas');
         }
@@ -107,10 +104,14 @@ export default function PerfilRecetasPublicadas() {
               id={recipe._id}
               title={recipe.title}
               category={recipe.category}
-              author={recipe.user}
+              author={
+                typeof recipe.user === 'object'
+                  ? recipe.user.alias || recipe.user._id || ''
+                  : recipe.user
+              }
               imageUrl={recipe.image_url}
               rating={recipe.averageRating || 0}
-              onPress={() => {}}
+              onPress={() => router.push(`./receta/${recipe._id}`)}
               onToggleFavorite={() => {}}
               isFavorite={false}
               variant="compact"
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 56,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#F6F6F6',
   },
   header: {
     flexDirection: 'row',
