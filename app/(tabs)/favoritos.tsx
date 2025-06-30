@@ -170,17 +170,9 @@ export default function FavoritosScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={28} color="#025E45" />
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-          <Pressable onPress={() => router.push('/(tabs)/home')}>
-            <AppLogo width={140} height={41} style={{ alignSelf: 'center' }} />
-          </Pressable>
-        </View>
-        <View style={{ width: 28 }} />
-      </View>
+      <Pressable onPress={() => router.push('/(tabs)/home')}>
+        <AppLogo width={150} height={72} marginBottom={24} />
+      </Pressable>
       <Text style={styles.title}>Mis favoritos</Text>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {favorites.length === 0 && (
@@ -237,7 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F6F6',
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 60,
   },
   title: {
     fontSize: 22,
@@ -323,29 +315,6 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 24,
-    marginBottom: 4,
-  },
-  logoContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButton: {
-    width: 28,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    borderRadius: 20,
-    padding: 4,
-    elevation: 2,
-    zIndex: 2,
-    marginRight: 0,
-    left: 0,
   },
   scrollContent: {
     alignItems: 'stretch',
