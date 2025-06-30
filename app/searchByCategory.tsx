@@ -53,7 +53,7 @@ export default function SearchByCategoryScreen() {
     if (selectedCategory) {
       setLoading(true);
       const [sortBy, order] = selectedOrder.split('_');
-      fetch(`https://bon-appetit-production.up.railway.app/api/recipies?category=${encodeURIComponent(selectedCategory)}&sortBy=${sortBy}&order=${order}`)
+      fetch(`https://bon-appetit-production.up.railway.app/api/recipies?category=${encodeURIComponent(selectedCategory)}&sortBy=${sortBy}&order=${order}&isVerificated=true`)
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {

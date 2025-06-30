@@ -47,7 +47,7 @@ export default function SearchScreen() {
     const userRole = useUserRole();
 
     useEffect(() => {
-        const fetchIngredients = async () => {
+        const fetchIngredients = async () => { 
             try {
                 const res = await fetch('https://bon-appetit-production.up.railway.app/api/ingredients');
                 const data = await res.json();
@@ -91,6 +91,9 @@ export default function SearchScreen() {
         if (includeIngredients.length > 0) params.append('contains', includeIngredients.join(','));
         if (excludeIngredients.length > 0) params.append('notContains', excludeIngredients.join(','));
 
+        params.append('isVerificated', 'true');
+
+
         try {
             const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies?${params.toString()}`);
             const data = await res.json();
@@ -106,6 +109,7 @@ export default function SearchScreen() {
     };
 
     useEffect(() => {
+
         const fetchResults = async () => {
             try {
                 const [sortBy, order] = selectedOrder.split('_');
@@ -120,6 +124,8 @@ export default function SearchScreen() {
                 }
 
                 if (searchType === 'ingredientes') return;
+
+                params.append('isVerificated', 'true');
 
                 const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies?${params.toString()}`);
                 const data = await res.json();
