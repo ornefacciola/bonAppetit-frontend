@@ -5,6 +5,7 @@ import { AppLogo } from '@/components/ui/AppLogo';
 import { CategoryCard } from '@/components/ui/CategoryCard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { OrderModal } from '@/components/ui/OrderModal';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -31,6 +32,7 @@ export default function SearchByCategoryScreen() {
   const [selectedOrder, setSelectedOrder] = useState('publishedDate_desc');
 
   const { isFavorite, toggleFavorite } = useFavorite();
+  const userRole = useUserRole();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -147,6 +149,7 @@ export default function SearchByCategoryScreen() {
               onToggleFavorite={() => toggleFavorite(item.id)}
               isFavorite={isFavorite(item.id)}
               variant="compact"
+              userRole={userRole}
             />
           )}
           ListEmptyComponent={loading ? (
