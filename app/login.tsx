@@ -3,15 +3,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Linking,
-    Modal,
-    Platform,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    TextInput,
-    View,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -68,7 +69,16 @@ export default function LoginScreen() {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       <ThemedView style={styles.container}>
-        <AppLogo width={180} height={62} style={styles.logo} />
+        
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => router.push('/')}>
+          <Ionicons name="arrow-back" size={28} color="#025E45" />
+        </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <AppLogo width={180} height={62} style={{ marginBottom: -1, marginLeft: -12 }} />
+        </View>
+        <View style={{ width: 28 }} />
+      </View>
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -182,18 +192,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 100,
+    marginBottom: 24,
+    width: '90%',
+    alignSelf: 'center',
+    //gap: 12, // si no funciona, usá marginRight manual
+  },
+  logoWrapper: {
+    //marginLeft: 16, // empuja el logo para que no se solape con el ícono
+  },
   inner: {
     flex: 1,
     width: '90%',
     alignSelf: 'center',
     paddingTop: 60,
-  },
-  logo: {
-    width: 180,
-    height: 62,
-    alignSelf: 'center',
-    marginTop: 100,
-    marginBottom: 24,
   },
   label: {
     fontSize: 12,
