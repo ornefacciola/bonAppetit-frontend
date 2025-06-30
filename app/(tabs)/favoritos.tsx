@@ -138,8 +138,8 @@ export default function FavoritosScreen() {
   if (userRole === 'guest') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Tus Favoritos</Text>
         <View style={styles.guestContainer}>
+          <AppLogo width={140} height={41} style={{ marginBottom: 32 }} />
           <Ionicons name="heart-outline" size={64} color="#ccc" />
           <Text style={styles.guestTitle}>Inicia sesión para ver tus favoritos</Text>
           <Text style={styles.guestSubtitle}>
@@ -301,17 +301,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   guestTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 12,
     color: '#025E45',
+    textAlign: 'center',
   },
   guestSubtitle: {
-    color: '#888',
+    color: '#666',
     textAlign: 'center',
-    marginTop: 16,
+    marginBottom: 24,
   },
   loginButton: {
     backgroundColor: '#025E45',
