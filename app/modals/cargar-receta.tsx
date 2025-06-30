@@ -15,6 +15,9 @@ import {
   View,
 } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
 import IngredienteItem from '../../components/receta/IngredienteItem';
 import PasoItem from '../../components/receta/PasoItem';
 import BotonPrincipal from '../../components/ui/BotonPrincipal';
@@ -202,25 +205,64 @@ export default function CargarRecetaModal() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.8,
+      base64: false
     });
 
     if (!resultado.canceled && resultado.assets.length > 0) {
-      setFotoFinal(resultado.assets[0].uri);
+      const uri = resultado.assets[0].uri;
+      if (uri.startsWith('file://')) {
+        setFotoFinal(uri);
+      } else {
+        alert('La imagen seleccionada no es válida para subir.');
+      }
     }
+
   };
 
-  const handleCargarReceta = () => {
-    const receta = {
-      titulo,
-      categoria,
-      porciones,
-      ingredientes,
-      pasos,
-      fotoFinal,
-    };
-    console.log('Receta:', receta);
-    setModalExitoVisible(true);
-  };
+  const handleCargarReceta = async () => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (!token) {
+      alert('Token no disponible');
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append('title', titulo);
+    formData.append('category', categoria);
+    formData.append('portions', porciones);
+    formData.append('description', '');
+    formData.append('ingredients', JSON.stringify(ingredientes));
+    formData.append('stepsList', JSON.stringify(pasos.map(({ descripcion }) => ({ descripcion }))));
+    formData.append('aditionalMedia', JSON.stringify([]));
+
+    if (fotoFinal) {
+      formData.append('image', {
+        uri: fotoFinal,
+        type: 'image/jpeg',
+        name: `foto_${Date.now()}.jpg`,
+      } as any);
+    }
+
+    const response = await axios.post('https://bon-appetit-production.up.railway.app/api/recipies', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data.status === 'success') {
+      setModalExitoVisible(true);
+    } else {
+      alert('Error al cargar la receta');
+    }
+  } catch (error: any) {
+    console.error('Error al cargar receta:', error?.response || error);
+    alert('Ocurrió un error al enviar la receta');
+  }
+};
+
 
   return (
     <KeyboardAvoidingView
