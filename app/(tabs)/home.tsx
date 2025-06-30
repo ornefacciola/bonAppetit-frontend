@@ -54,7 +54,7 @@ export default function HomeScreen() {
     };
     const fetchRecentRecipes = async () => {
       try {
-        const response = await fetch('https://bon-appetit-production.up.railway.app/api/recipies?limit=3&sortBy=publishedDate&order=desc');
+        const response = await fetch('https://bon-appetit-production.up.railway.app/api/recipies?limit=3&sortBy=publishedDate&order=desc&isVerificated=true');
         const data = await response.json();
         if (data.status === "success") {
           setRecentRecipes(data.payload.map((recipe: any) => ({
