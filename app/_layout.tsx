@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import 'react-native-reanimated';
 
 import { GlobalBottomBar } from '@/components/GlobalBottomBar';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Redirect } from 'expo-router';
 

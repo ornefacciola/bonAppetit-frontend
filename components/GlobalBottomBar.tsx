@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';

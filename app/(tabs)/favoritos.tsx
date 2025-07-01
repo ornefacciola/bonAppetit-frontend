@@ -138,18 +138,21 @@ export default function FavoritosScreen() {
   if (userRole === 'guest') {
     return (
       <View style={styles.container}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+          <Ionicons name="close" size={32} color="#025E45" />
+        </TouchableOpacity>
         <View style={styles.guestContainer}>
           <AppLogo width={140} height={41} style={{ marginBottom: 32 }} />
           <Ionicons name="heart-outline" size={64} color="#ccc" />
-          <Text style={styles.guestTitle}>Inicia sesión para ver tus favoritos</Text>
+          <Text style={[styles.guestTitle, { color: '#111' }]}>Inicia sesión para ver tus favoritos</Text>
           <Text style={styles.guestSubtitle}>
             Guarda tus recetas favoritas y personalízalas a tu gusto
           </Text>
           <TouchableOpacity 
-            style={styles.loginButton}
+            style={[styles.loginButton, { backgroundColor: '#025E45', borderWidth: 0, marginTop: 32, paddingVertical: 12, width: 180, alignItems: 'center' }]}
             onPress={() => router.push('/login')}
           >
-            <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+            <Text style={[styles.loginButtonText, { color: '#fff', fontSize: 18, textAlign: 'center' }]}>Iniciar Sesión</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -291,13 +294,13 @@ const styles = StyleSheet.create({
   },
   guestContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingTop: 200,
   },
   guestTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
     marginBottom: 12,
     color: '#025E45',
     textAlign: 'center',
@@ -318,7 +321,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignItems: 'stretch',
-    paddingBottom: 32,
+    paddingBottom: 0,
     paddingHorizontal: 0,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 24,
+    zIndex: 10,
   },
 }); 

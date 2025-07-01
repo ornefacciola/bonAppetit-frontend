@@ -43,14 +43,17 @@ export function ProtectedPage({ children, pageName }: ProtectedPageProps) {
 
     return (
       <View style={styles.guestContainer}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+          <Ionicons name="close" size={32} color="#025E45" />
+        </TouchableOpacity>
         <AppLogo width={140} height={41} style={{ marginBottom: 32 }} />
         <Ionicons name={getIcon()} size={64} color="#ccc" />
         <Text style={styles.guestTitle}>{getMessage()}</Text>
         <TouchableOpacity
-          style={styles.loginButton}
+          style={[styles.loginButton, { backgroundColor: '#025E45', borderWidth: 0, marginTop: 32, paddingVertical: 12, width: 180 }]}
           onPress={() => router.replace('/login')}
         >
-          <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+          <Text style={[styles.loginButtonText, { color: '#fff', fontSize: 18 }]}>Iniciar Sesión</Text>
         </TouchableOpacity>
       </View>
     );
@@ -69,9 +72,8 @@ const styles = StyleSheet.create({
   },
   guestTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
     marginBottom: 24,
-    color: '#025E45',
+    color: 'black',
     textAlign: 'center',
     marginTop: 16,
   },
@@ -85,5 +87,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 24,
+    zIndex: 10,
   },
 }); 

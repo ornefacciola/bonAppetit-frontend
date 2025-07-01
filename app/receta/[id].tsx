@@ -776,7 +776,7 @@ export default function RecipePage() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, alignItems: 'center', width: 300 }}>
             <Ionicons name="lock-closed-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#025E45', marginBottom: 12, textAlign: 'center' }}>
+            <Text style={{ fontSize: 18, color: 'black', marginBottom: 12, textAlign: 'center' }}>
               Para evaluar receta debes iniciar sesión
             </Text>
             <View style={{ flexDirection: 'row', marginTop: 12 }}>

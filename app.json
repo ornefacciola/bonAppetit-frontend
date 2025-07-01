@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "bonappettitfrontend",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
@@ -16,7 +16,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdge": true,
+      "navigationBar": {
+        "visible": "auto",         // Cambia a "immersive" si querés ocultar todo el sistema
+        "barStyle": "light-content" 
+      },
+      "package": "com.juanirios.bonAppettitFrontend"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +42,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8e34cb60-577a-4259-b538-94dc55345b1c"
+      }
     }
   }
 }
