@@ -1,3 +1,4 @@
+//app/recetas-publicadas.tsx
 import RecipeCard from '@/components/receta/RecipeCard';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +47,9 @@ export default function PerfilRecetasPublicadas() {
 
         if (data.status === 'success') {
           setRecipes(data.payload);
+          const titulosAprobados = data.payload.map((r: Recipe) => r.title.trim().toLowerCase());
+          await AsyncStorage.setItem('userApprovedRecipeTitles', JSON.stringify(titulosAprobados));
+          await AsyncStorage.setItem('userApprovedRecipes', JSON.stringify(data.payload));
         } else {
           setError('No se pudieron cargar las recetas');
         }
