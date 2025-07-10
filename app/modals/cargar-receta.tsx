@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -17,22 +16,27 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import SuccessModal from '../../components/ui/SuccessModal';
+import WarningModal from '../../components/ui/WarningModal';
 
-// --- Ayudante para mapear ingredientes/steps del backend a tu formato ---
-const parseIngredientes = (arr: any[]) =>
+// --- Parseadores extendidos y con tipado any ---
+const parseIngredientes = (arr: any[] = []) =>
   arr && arr.length > 0
     ? arr.map((i: any) => ({
-        nombre: i.nombre || i.name || '',
-        cantidad: i.cantidad !== undefined ? String(i.cantidad) : '',
-        unidad: i.unidad || i.unit || ''
+        nombre: i.nombre || i.name || i.ingredient || '',
+        cantidad:
+          i.cantidad !== undefined ? String(i.cantidad) :
+          i.quantity !== undefined ? String(i.quantity) :
+          '',
+        unidad: i.unidad || i.unit || i.medida || ''
       }))
     : [{ nombre: '', cantidad: '', unidad: '' }];
 
-const parsePasos = (arr: any[]) =>
+const parsePasos = (arr: any[] = []) =>
   arr && arr.length > 0
     ? arr.map((p: any) => ({
-        descripcion: p.descripcion || p.description || '',
-        media: p.media || null
+        descripcion: p.descripcion || p.description || p.texto || '',
+        media: p.media || p.image || null
       }))
     : [{ descripcion: '', media: null }];
 
@@ -42,13 +46,17 @@ export default function CargarRecetaWizard() {
   const [step, setStep] = useState<Step>('titulo');
   const [loading, setLoading] = useState(false);
 
+  // Modales visuales
+  const [modalExito, setModalExito] = useState(false);
+  const [modalError, setModalError] = useState({ visible: false, mensaje: '' });
+
   // Campos receta
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('');
   const [porciones, setPorciones] = useState('');
   const [user, setUser] = useState<string | null>(null);
-  const [recetaId, setRecetaId] = useState<string | null>(null); // Para buscar por ID si existe
+  const [recetaId, setRecetaId] = useState<string | null>(null);
 
   // Ingredientes y pasos
   const [ingredientes, setIngredientes] = useState([{ nombre: '', cantidad: '', unidad: '' }]);
@@ -156,22 +164,27 @@ export default function CargarRecetaWizard() {
     }
   };
 
-  // -------- VALIDACIÓN DE TÍTULO CON EL BACKEND --------
+  // -------- VALIDACIÓN DE TÍTULO CON EL BACKEND (EXACTA) --------
   const validarTitulo = async (titulo: string) => {
     if (!user) return false;
     const url = `https://bon-appetit-production.up.railway.app/api/recipies?title=${encodeURIComponent(titulo)}&user=${encodeURIComponent(user)}`;
     try {
       const res = await fetch(url);
       const data = await res.json();
-      // Si hay recetas con ese título, retorna true y guarda el ID
-      if (Array.isArray(data.payload) && data.payload.length > 0) {
-        setRecetaId(data.payload[0]._id);
-        return true;
+      // Buscar coincidencia exacta, case-insensitive
+      if (Array.isArray(data.payload)) {
+        const receta = data.payload.find(
+          (r: any) => r.title.trim().toLowerCase() === titulo.trim().toLowerCase()
+        );
+        if (receta) {
+          setRecetaId(receta._id);
+          return true;
+        }
       }
       setRecetaId(null);
       return false;
     } catch (err) {
-      Alert.alert('Error', 'No se pudo validar el título');
+      setModalError({ visible: true, mensaje: 'No se pudo validar el título' });
       return false;
     }
   };
@@ -193,8 +206,63 @@ export default function CargarRecetaWizard() {
         setFotoFinal(receta.image_url || null);
       }
     } catch {
-      Alert.alert('Error', 'No se pudo cargar la receta existente');
+      setModalError({ visible: true, mensaje: 'No se pudo cargar la receta existente' });
     }
+  };
+
+  // --------- SIEMPRE POST: CARGA UNA RECETA NUEVA ---------
+  // Aunque edites datos de una receta existente, esto siempre hace POST (crear nueva)
+  const enviarReceta = async () => {
+    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
+      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) throw new Error('Token no encontrado');
+
+      const formData = new FormData();
+      formData.append('title', titulo);
+      formData.append('description', descripcion);
+      formData.append('category', categoria);
+      formData.append('portions', porciones);
+      formData.append('ingredients', JSON.stringify(ingredientes));
+      formData.append('stepsList', JSON.stringify(pasos));
+      formData.append('aditionalMedia', JSON.stringify([]));
+      formData.append('isVerified', 'false'); // Omitilo si tu back no lo usa
+
+      if (fotoFinal) {
+        formData.append('image', {
+          uri: fotoFinal,
+          type: 'image/jpeg',
+          name: `foto_${Date.now()}.jpg`,
+        } as any);
+      }
+
+      const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Error al enviar la receta');
+      setModalExito(true);
+
+      // Limpiar los campos
+      setTitulo('');
+      setDescripcion('');
+      setCategoria('');
+      setPorciones('');
+      setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
+      setPasos([{ descripcion: '', media: null }]);
+      setFotoFinal(null);
+    } catch (err: any) {
+      setModalError({ visible: true, mensaje: err.message || 'No se pudo enviar la receta' });
+    }
+    setLoading(false);
   };
 
   // ----------- UI -----------
@@ -220,7 +288,7 @@ export default function CargarRecetaWizard() {
           style={styles.button}
           onPress={async () => {
             if (!titulo.trim()) {
-              Alert.alert('Error', 'El título no puede estar vacío');
+              setModalError({ visible: true, mensaje: 'El título no puede estar vacío' });
               return;
             }
             setLoading(true);
@@ -245,6 +313,23 @@ export default function CargarRecetaWizard() {
             <Text style={styles.buttonText}>Siguiente</Text>
           )}
         </TouchableOpacity>
+
+        {/* MODALES */}
+        <SuccessModal
+          visible={modalExito}
+          onClose={() => {
+            setModalExito(false);
+            router.back();
+          }}
+          title="¡Éxito!"
+          message="Receta cargada. Queda pendiente de aprobación."
+        />
+        <WarningModal
+          visible={modalError.visible}
+          onClose={() => setModalError({ visible: false, mensaje: '' })}
+          title="Error"
+          message={modalError.mensaje}
+        />
       </KeyboardAvoidingView>
     );
   }
@@ -276,6 +361,21 @@ export default function CargarRecetaWizard() {
             <Text style={styles.conflictBtnText}>Cancelar</Text>
           </TouchableOpacity>
         </View>
+        <SuccessModal
+          visible={modalExito}
+          onClose={() => {
+            setModalExito(false);
+            router.back();
+          }}
+          title="¡Éxito!"
+          message="Receta cargada. Queda pendiente de aprobación."
+        />
+        <WarningModal
+          visible={modalError.visible}
+          onClose={() => setModalError({ visible: false, mensaje: '' })}
+          title="Error"
+          message={modalError.mensaje}
+        />
       </View>
     );
   }
@@ -390,14 +490,13 @@ export default function CargarRecetaWizard() {
             multiline
           />
 
-
           {/* FOTO POR PASO */}
           <TouchableOpacity
             style={styles.addButton}
             onPress={async () => {
               const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
               if (!permiso.granted) {
-                Alert.alert('Permiso denegado');
+                setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
                 return;
               }
               const resultado = await ImagePicker.launchImageLibraryAsync({
@@ -447,7 +546,7 @@ export default function CargarRecetaWizard() {
         onPress={async () => {
           const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (!permiso.granted) {
-            Alert.alert('Permiso denegado');
+            setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
             return;
           }
           const resultado = await ImagePicker.launchImageLibraryAsync({
@@ -473,16 +572,32 @@ export default function CargarRecetaWizard() {
       {/* Botón de envío */}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => {
-          if (!descripcion.trim() || !categoria.trim() || !porciones.trim()) {
-            Alert.alert('Faltan campos obligatorios');
-            return;
-          }
-          Alert.alert('¡Receta lista para enviar!', 'Implementá el POST acá.');
-        }}
+        onPress={enviarReceta}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>Cargar receta</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Cargar receta</Text>
+        )}
       </TouchableOpacity>
+
+      {/* --------- MODALES --------- */}
+      <SuccessModal
+        visible={modalExito}
+        onClose={() => {
+          setModalExito(false);
+          router.back();
+        }}
+        title="¡Éxito!"
+        message="Receta cargada. Queda pendiente de aprobación."
+      />
+      <WarningModal
+        visible={modalError.visible}
+        onClose={() => setModalError({ visible: false, mensaje: '' })}
+        title="Error"
+        message={modalError.mensaje}
+      />
 
       {/* --------- MODAL DE CATEGORÍAS --------- */}
       <Modal visible={categoriaModal} transparent animationType="slide">
@@ -635,7 +750,6 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 15,
   },
-  // ----- Conflicto -----
   conflictTitle: {
     fontWeight: 'bold',
     fontSize: 23,
