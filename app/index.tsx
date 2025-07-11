@@ -7,6 +7,7 @@ import { Pressable, StatusBar, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppLogo } from '@/components/ui/AppLogo';
+import { useLandingNav } from './_layout';
 
 interface Props {
   navigation: any;
@@ -16,6 +17,7 @@ interface Props {
 export default function PrincipalScreen({ navigation }: Props) {
   const router = useRouter();
   const { login } = useAuth();
+  const handleLandingNav = useLandingNav();
 
   const handleGuestLogin = async () => {
     // Limpiar cualquier token previo y setear modo guest
@@ -38,14 +40,14 @@ export default function PrincipalScreen({ navigation }: Props) {
 
         <Pressable
           style={styles.button}
-          onPress={() => router.push('/login')}
+          onPress={() => handleLandingNav(() => router.push('/login'))}
         >
           <ThemedText type="defaultSemiBold" style={styles.buttonText}>
             Iniciar sesión
           </ThemedText>
         </Pressable>
 
-        <Pressable onPress={handleGuestLogin}>
+        <Pressable onPress={() => handleLandingNav(handleGuestLogin)}>
           <ThemedText type="link" style={styles.guestLink}>
             {'Soy visitante, quiero\ningresar sin iniciar sesión'}
           </ThemedText>
