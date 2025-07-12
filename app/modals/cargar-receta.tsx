@@ -16,8 +16,11 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import NoInternetModal from '../../components/ui/NoInternetModal';
+import PublishRecipeNoWifiModal from '../../components/ui/PublishRecipeNoWifiModal';
 import SuccessModal from '../../components/ui/SuccessModal';
 import WarningModal from '../../components/ui/WarningModal';
+import { useMobileData } from '../../contexts/MobileDataContext';
 
 // --- Parseadores extendidos y con tipado any ---
 const parseIngredientes = (arr: any[] = []) =>
@@ -75,6 +78,16 @@ export default function CargarRecetaWizard() {
   const [ingredienteFiltro, setIngredienteFiltro] = useState('');
   const [ingredientesSugeridos, setIngredientesSugeridos] = useState<any[]>([]);
   const [loadingIngredientes, setLoadingIngredientes] = useState(false);
+
+  const { isConnected, isWifi, allowMobileData, setAllowMobileData } = useMobileData();
+  const [hideModal, setHideModal] = useState(false);
+  const shouldShowModal = isConnected === false && !allowMobileData && !hideModal;
+  const [showWifiModal, setShowWifiModal] = useState(false);
+
+  // Resetear permiso de datos móviles al entrar a la pantalla
+  useEffect(() => {
+    setAllowMobileData(false);
+  }, []);
 
   const router = useRouter();
 
@@ -330,6 +343,12 @@ export default function CargarRecetaWizard() {
           title="Error"
           message={modalError.mensaje}
         />
+        <NoInternetModal
+          visible={shouldShowModal}
+          onContinueWithMobile={() => setAllowMobileData(true)}
+          onClose={() => setHideModal(true)}
+          isLanding={true}
+        />
       </KeyboardAvoidingView>
     );
   }
@@ -376,11 +395,29 @@ export default function CargarRecetaWizard() {
           title="Error"
           message={modalError.mensaje}
         />
+        <NoInternetModal
+          visible={shouldShowModal}
+          onContinueWithMobile={() => setAllowMobileData(true)}
+          onClose={() => setHideModal(true)}
+          isLanding={true}
+        />
       </View>
     );
   }
 
   // ---------- FORMULARIO ----------
+  const handleCargarReceta = () => {
+    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
+      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
+      return;
+    }
+    if (!isWifi && !allowMobileData) {
+      setShowWifiModal(true);
+      return;
+    }
+    enviarReceta();
+  };
+
   return (
     <ScrollView contentContainerStyle={[styles.fullScreen,{ paddingBottom: 60 }]}>
       <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
@@ -572,7 +609,7 @@ export default function CargarRecetaWizard() {
       {/* Botón de envío */}
       <TouchableOpacity
         style={styles.button}
-        onPress={enviarReceta}
+        onPress={handleCargarReceta}
         disabled={loading}
       >
         {loading ? (
@@ -664,6 +701,25 @@ export default function CargarRecetaWizard() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+      <NoInternetModal
+        visible={shouldShowModal}
+        onContinueWithMobile={() => setAllowMobileData(true)}
+        onClose={() => setHideModal(true)}
+        isLanding={true}
+      />
+      <PublishRecipeNoWifiModal
+        visible={showWifiModal}
+        onPublishWithMobile={() => {
+          setAllowMobileData(true);
+          setShowWifiModal(false);
+          enviarReceta();
+        }}
+        onPublishWithWifi={() => {
+          setShowWifiModal(false);
+          // Aquí podrías guardar la receta para después, o simplemente cerrar el modal.
+        }}
+        onClose={() => setShowWifiModal(false)}
+      />
     </ScrollView>
   );
 }
