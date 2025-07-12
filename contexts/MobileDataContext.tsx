@@ -23,6 +23,13 @@ export const MobileDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return () => unsubscribe();
   }, []);
 
+  // Resetear permiso de datos móviles cada vez que vuelve el WiFi
+  useEffect(() => {
+    if (isWifi) {
+      setAllowMobileData(false);
+    }
+  }, [isWifi]);
+
   return (
     <MobileDataContext.Provider value={{ isConnected, isWifi, allowMobileData, setAllowMobileData }}>
       {children}

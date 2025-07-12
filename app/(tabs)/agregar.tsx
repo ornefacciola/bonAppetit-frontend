@@ -3,8 +3,6 @@ import { ProtectedPage } from '@/components/ProtectedPage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppLogo } from '@/components/ui/AppLogo';
-import NoInternetModal from '@/components/ui/NoInternetModal';
-import { useMobileData } from '@/contexts/MobileDataContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -21,11 +19,7 @@ const router = useRouter();
 
 export default function Agregar() {
   const [searchText, setSearchText] = useState('');
-  const { isConnected, allowMobileData, setAllowMobileData } = useMobileData();
-  const [hideModal, setHideModal] = useState(false);
-
-  // Mostrar modal si no hay conexión y no se permite datos móviles
-  const shouldShowModal = isConnected === false && !allowMobileData && !hideModal;
+  // Eliminar lógica local de conexión y modal
 
   return (
     <ProtectedPage pageName="cargar-receta">
@@ -60,12 +54,7 @@ export default function Agregar() {
           </ThemedText>
           </View>
         </ThemedView>
-        <NoInternetModal
-          visible={shouldShowModal}
-          onContinueWithMobile={() => setAllowMobileData(true)}
-          onClose={() => setHideModal(true)}
-          isLanding={true}
-        />
+        {/* Eliminar NoInternetModal local */}
       </>
     </ProtectedPage>
   );

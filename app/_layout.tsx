@@ -44,10 +44,10 @@ function ProtectedApp() {
 
   // Lógica de visibilidad del modal
   const shouldShowModal =
-    isLoggedIn && !isLanding && !inRecipeUpload && isConnected === false && !allowMobileData
+    isLoggedIn && !isLanding && !inRecipeUpload && isWifi === false && !allowMobileData
       ? true
       : isLandingOrNotLogged
-        ? isConnected === false && !allowMobileData && !hideLandingModal
+        ? isWifi === false && !allowMobileData && !hideLandingModal
         : false;
 
   // Handler especial para cerrar el modal en landing o cuando no está logueado

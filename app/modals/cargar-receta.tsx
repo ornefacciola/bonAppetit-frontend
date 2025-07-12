@@ -82,14 +82,10 @@ export default function CargarRecetaWizard() {
 
   const { isConnected, isWifi, allowMobileData, setAllowMobileData } = useMobileData();
   const [hideModal, setHideModal] = useState(false);
-  const shouldShowModal = isConnected === false && !allowMobileData && !hideModal;
+  // Cambiar la condición de shouldShowModal para usar isWifi
+  const shouldShowModal = isWifi === false && !allowMobileData && !hideModal;
   const [showWifiModal, setShowWifiModal] = useState(false);
   const [userAlias, setUserAlias] = useState<string | null>(null);
-
-  // Resetear permiso de datos móviles al entrar a la pantalla
-  useEffect(() => {
-    setAllowMobileData(false);
-  }, []);
 
   useEffect(() => {
     const getAlias = async () => {
@@ -424,7 +420,7 @@ export default function CargarRecetaWizard() {
       setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
       return;
     }
-    if (!isWifi && !allowMobileData) {
+    if (!isWifi) {
       setShowWifiModal(true);
       return;
     }
@@ -722,10 +718,11 @@ export default function CargarRecetaWizard() {
       />
       <PublishRecipeNoWifiModal
         visible={showWifiModal}
-        onPublishWithMobile={() => {
+        onPublishWithMobile={async () => {
           setAllowMobileData(true);
           setShowWifiModal(false);
-          enviarReceta();
+          await enviarReceta();
+          setModalExito(true);
         }}
         onPublishWithWifi={async () => {
           setShowWifiModal(false);
@@ -748,10 +745,22 @@ export default function CargarRecetaWizard() {
         }}
         onClose={() => setShowWifiModal(false)}
       />
+      <SuccessModal
+        visible={modalExito}
+        onClose={() => {
+          setModalExito(false);
+          router.back();
+        }}
+        title="¡Éxito!"
+        message="Receta enviada. Está pendiente de aprobación y podés consultarla en Recetas pendientes de aprobación."
+      />
       {successDraft && (
         <SuccessModal
           visible={successDraft}
-          onClose={() => setSuccessDraft(false)}
+          onClose={() => {
+            setSuccessDraft(false);
+            router.back();
+          }}
           title="¡Borrador guardado!"
           message="Receta agregada a borradores. Podrás publicarla cuando tengas WiFi."
         />
