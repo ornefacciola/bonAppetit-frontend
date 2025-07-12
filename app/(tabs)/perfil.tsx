@@ -91,6 +91,19 @@ export default function PerfilScreen() {
         {/* Línea */}
         <View style={styles.divider} />
 
+        {/* Opción 3: Borradores */}
+        <TouchableOpacity style={styles.optionRow}
+          onPress={() => router.push('/borradores')}>
+          <View style={styles.optionLeft}>
+            <Ionicons name="document-outline" size={20} color="black" />
+            <Text style={styles.optionText}>Borradores</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="black" />
+        </TouchableOpacity>
+
+        {/* Línea */}
+        <View style={styles.divider} />
+
         {/* Opción 3: Cerrar sesión */}
           <TouchableOpacity style={styles.optionRow} onPress={() => router.replace('/')}>
           <View style={styles.optionLeft}>

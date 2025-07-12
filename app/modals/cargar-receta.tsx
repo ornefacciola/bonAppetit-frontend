@@ -52,6 +52,7 @@ export default function CargarRecetaWizard() {
   // Modales visuales
   const [modalExito, setModalExito] = useState(false);
   const [modalError, setModalError] = useState({ visible: false, mensaje: '' });
+  const [successDraft, setSuccessDraft] = useState(false);
 
   // Campos receta
   const [titulo, setTitulo] = useState('');
@@ -83,10 +84,22 @@ export default function CargarRecetaWizard() {
   const [hideModal, setHideModal] = useState(false);
   const shouldShowModal = isConnected === false && !allowMobileData && !hideModal;
   const [showWifiModal, setShowWifiModal] = useState(false);
+  const [userAlias, setUserAlias] = useState<string | null>(null);
 
   // Resetear permiso de datos móviles al entrar a la pantalla
   useEffect(() => {
     setAllowMobileData(false);
+  }, []);
+
+  useEffect(() => {
+    const getAlias = async () => {
+      const userInfoString = await AsyncStorage.getItem('userInfo');
+      if (userInfoString) {
+        const user = JSON.parse(userInfoString);
+        setUserAlias(user.alias);
+      }
+    };
+    getAlias();
   }, []);
 
   const router = useRouter();
@@ -714,12 +727,35 @@ export default function CargarRecetaWizard() {
           setShowWifiModal(false);
           enviarReceta();
         }}
-        onPublishWithWifi={() => {
+        onPublishWithWifi={async () => {
           setShowWifiModal(false);
-          // Aquí podrías guardar la receta para después, o simplemente cerrar el modal.
+          // Guardar la receta como borrador por usuario
+          if (!userAlias) return;
+          const receta = {
+            titulo,
+            descripcion,
+            categoria,
+            porciones,
+            ingredientes,
+            pasos,
+            fotoFinal,
+          };
+          const data = await AsyncStorage.getItem(`pendingRecipes_${userAlias}`);
+          const borradores = data ? JSON.parse(data) : [];
+          borradores.push(receta);
+          await AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores));
+          setSuccessDraft(true);
         }}
         onClose={() => setShowWifiModal(false)}
       />
+      {successDraft && (
+        <SuccessModal
+          visible={successDraft}
+          onClose={() => setSuccessDraft(false)}
+          title="¡Borrador guardado!"
+          message="Receta agregada a borradores. Podrás publicarla cuando tengas WiFi."
+        />
+      )}
     </ScrollView>
   );
 }
