@@ -33,7 +33,7 @@ export default function SearchScreen() {
     const [searchType, setSearchType] = useState<'receta' | 'ingredientes' | 'usuarios'>('receta');
     const [searchText, setSearchText] = useState('');
     const [orderModalVisible, setOrderModalVisible] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState('publishedDate_desc');
+    const [selectedOrder, setSelectedOrder] = useState('title_asc');
     const [ingredientResults, setIngredientResults] = useState<any[]>([]);
     const [allIngredients, setAllIngredients] = useState<any[]>([]);
     const [selectedIngredient, setSelectedIngredient] = useState<string | null>(null);
