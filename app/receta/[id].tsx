@@ -510,8 +510,10 @@ export default function RecipePage() {
             )}
           </View>
         </View>
+        <Text style={{ fontSize: 16, }}>
+            {recipe.description}
+          </Text>
       </View>
-
       {/* Main image */}
       {recipe.image_url ? (
         <Image
