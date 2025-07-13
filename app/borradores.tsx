@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import SuccessModal from '../components/ui/SuccessModal';
 import WarningModal from '../components/ui/WarningModal';
-import { useMobileData } from '../contexts/MobileDataContext';
+import { useConnection } from '../contexts/ConnectionContext';
 
 interface BorradorReceta {
   titulo: string;
@@ -22,10 +22,10 @@ export default function BorradoresScreen() {
   const [loading, setLoading] = useState(true);
   const [publicando, setPublicando] = useState<string | null>(null);
   const [userAlias, setUserAlias] = useState<string | null>(null);
-  const { isWifi } = useMobileData();
   const router = useRouter();
   const [modalError, setModalError] = useState({ visible: false, mensaje: '' });
   const [modalExito, setModalExito] = useState(false);
+  const { isConnected } = useConnection();
 
   useEffect(() => {
     const getAliasAndLoad = async () => {
@@ -58,11 +58,10 @@ export default function BorradoresScreen() {
   };
 
   const intentarPublicar = async (receta: BorradorReceta) => {
-    if (!isWifi) {
-      setModalError({ visible: true, mensaje: 'Necesitás conexión WiFi para publicar la receta.' });
+    if (!isConnected) {
+      setModalError({ visible: true, mensaje: 'Necesitás conexión a internet para publicar la receta.' });
       return;
     }
-    setPublicando(receta.titulo);
     try {
       const token = await AsyncStorage.getItem('authToken');
       const formData = new FormData();

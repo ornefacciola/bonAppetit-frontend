@@ -30,19 +30,16 @@ export default function ComentariosPendientes() {
         const userInfo = JSON.parse(userInfoString);
         const userId = userInfo._id || userInfo.id;
         const miAlias = userInfo.alias;
-        console.log('Alias logueado:', miAlias, 'ID:', userId);
 
         // 1. Obtener info del usuario
         const userResp = await fetch(`https://bon-appetit-production.up.railway.app/api/users/${userId}`);
         const userData = await userResp.json();
-        console.log('User data:', userData);
         if (userData.status !== 'success') {
           setError('No se pudo obtener la información del usuario');
           setLoading(false);
           return;
         }
         const favouriteRecipes = userData.user.favouriteRecipes;
-        console.log('Recetas favoritas:', favouriteRecipes);
 
         // 2. Buscar comentarios pendientes en recetas favoritas
         const pendientes: ComentarioPendiente[] = [];
@@ -50,13 +47,11 @@ export default function ComentariosPendientes() {
           try {
             const recetaResp = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`);
             const recetaData = await recetaResp.json();
-            console.log('Receta data:', recetaData);
             if (recetaData.status !== 'success') continue;
             const receta = Array.isArray(recetaData.payload) ? recetaData.payload[0] : recetaData.payload;
 
             if (Array.isArray(receta.rating)) {
               receta.rating.forEach((r: any) => {
-                console.log('Rating:', r);
                 if (
                   r.user?.toLowerCase() === miAlias?.toLowerCase() &&
                   r.comment &&
@@ -75,7 +70,6 @@ export default function ComentariosPendientes() {
             continue;
           }
         }
-        console.log('Pendientes encontrados:', pendientes);
         setPendientes(pendientes);
         setLoading(false);
       } catch (error) {

@@ -35,9 +35,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const router = useRouter();
   const isCompact = variant === 'compact';
 
-  // Debug: log del userRole
-  console.log('RecipeCard userRole:', userRole, 'isGuest:', userRole === 'guest');
-
   const handlePress = () => {
     if (onPress) {
       onPress(id);

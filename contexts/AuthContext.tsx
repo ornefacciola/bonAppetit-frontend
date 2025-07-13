@@ -48,7 +48,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setToken(storedToken);
         await AsyncStorage.setItem('authToken', storedToken);
         await AsyncStorage.setItem('userRole', data.user.role);
-        console.log('AuthContext: set userRole to:', data.user.role);
 
         if ('_id' in data.user) {
           const { _id, alias, name, email } = data.user;
@@ -83,7 +82,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    console.log('AuthContext: logout - removing userRole');
     await AsyncStorage.removeItem('authToken');
     await AsyncStorage.removeItem('userRole');
     await AsyncStorage.removeItem('userInfo');

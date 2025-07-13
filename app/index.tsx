@@ -24,7 +24,6 @@ export default function PrincipalScreen({ navigation }: Props) {
     await AsyncStorage.removeItem('authToken');
     await AsyncStorage.removeItem('userInfo');
     await AsyncStorage.setItem('userRole', 'guest');
-    console.log('index: set userRole to guest');
     router.replace('/(tabs)/home');
   };
 

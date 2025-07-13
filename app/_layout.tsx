@@ -11,9 +11,9 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Redirect } from 'expo-router';
 
 import { useRouter, useSegments } from 'expo-router';
-import NoInternetModal from '../components/ui/NoInternetModal';
+import GlobalConnectionModal from '../components/ui/GlobalConnectionModal';
+import { ConnectionProvider } from '../contexts/ConnectionContext';
 import { FavoriteProvider } from '../contexts/FavoriteContext';
-import { MobileDataProvider, useMobileData } from '../contexts/MobileDataContext';
 
 // Contexto para exponer el handler de navegación seguro en la landing
 const LandingNavContext = createContext<(navFn: () => void) => void>(() => {});
@@ -24,7 +24,6 @@ function ProtectedApp() {
   const userRole = useUserRole();
   const segments = useSegments();
   const router = useRouter();
-  const { isConnected, isWifi, allowMobileData, setAllowMobileData } = useMobileData();
 
   // Detectar si estamos en el flujo de carga de receta
   const inRecipeUpload =
@@ -44,16 +43,15 @@ function ProtectedApp() {
 
   // Lógica de visibilidad del modal
   const shouldShowModal =
-    isLoggedIn && !isLanding && !inRecipeUpload && isWifi === false && !allowMobileData
+    isLoggedIn && !isLanding && !inRecipeUpload
       ? true
       : isLandingOrNotLogged
-        ? isWifi === false && !allowMobileData && !hideLandingModal
+        ? false
         : false;
 
   // Handler especial para cerrar el modal en landing o cuando no está logueado
   const handleLandingClose = () => {
     setHideLandingModal(true);
-    setAllowMobileData(false);
     if (!isLanding && !isLoggedIn) {
       router.replace('/');
     }
@@ -61,10 +59,6 @@ function ProtectedApp() {
 
   // Handler para navegación desde landing
   const handleLandingNav = (navFn: () => void) => {
-    if (isLandingOrNotLogged && isConnected === false && !allowMobileData) {
-      setHideLandingModal(false);
-      return;
-    }
     navFn();
   };
 
@@ -79,10 +73,10 @@ function ProtectedApp() {
 
   // Ocultar modal automáticamente al volver la conexión
   React.useEffect(() => {
-    if (isConnected) {
+    if (isLoggedIn) {
       setHideLandingModal(false);
     }
-  }, [isConnected]);
+  }, [isLoggedIn]);
 
   if (isLoading || userRole === null) return null; // o Splash
 
@@ -117,21 +111,6 @@ function ProtectedApp() {
           <Stack.Screen name="forgotPasswordScreen" />
         </Stack>
         <GlobalBottomBar />
-        <NoInternetModal
-          visible={shouldShowModal}
-          onContinueWithMobile={() => setAllowMobileData(true)}
-          isLanding={isLandingOrNotLogged}
-          {...(isLandingOrNotLogged
-            ? { onClose: handleLandingClose }
-            : { onLogout: () => {
-                setAllowMobileData(false);
-                setTimeout(() => {
-                  logout();
-                  router.replace('/');
-                }, 0);
-              }}
-          )}
-        />
       </View>
     </LandingNavContext.Provider>
   );
@@ -147,12 +126,13 @@ export default function RootLayout() {
   }
 
   return (
-    <MobileDataProvider>
+    <ConnectionProvider>
       <FavoriteProvider>
         <AuthProvider>
           <ProtectedApp />
+          <GlobalConnectionModal />
         </AuthProvider>
       </FavoriteProvider>
-    </MobileDataProvider>
+    </ConnectionProvider>
   );
 }
