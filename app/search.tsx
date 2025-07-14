@@ -62,20 +62,25 @@ export default function SearchScreen() {
         fetchIngredients();
     }, []);
 
+    // Siempre muestra el dropdown cuando escribe o enfoca el input de ingredientes
     const handleIngredientSearch = (text: string) => {
         setSearchText(text);
+        setDropdownVisible(true);
         const filtered = allIngredients.filter((ing: any) =>
             ing.name.toLowerCase().includes(text.toLowerCase())
         );
         setIngredientResults(filtered);
     };
 
+    // Limpiar input y cerrar dropdown al seleccionar
     const handleIngredientSelect = (ingredient: string) => {
         setSelectedIngredient(ingredient);
         setIngredientModalVisible(true);
         setDropdownVisible(false);
+        setSearchText('');
     };
 
+    // Al cambiar de tab, cerrar dropdown y limpiar input
     const handleSearchTabChange = (type: 'receta' | 'ingredientes' | 'usuarios') => {
         setSearchText('');
         setSearchType(type);
@@ -84,16 +89,34 @@ export default function SearchScreen() {
         setShowIngredientUI(true);
     };
 
+    // Al cerrar el modal de ingredientes
+    const handleCloseIngredientModal = () => {
+        setIngredientModalVisible(false);
+        setDropdownVisible(false);
+        setSearchText('');
+    };
+
+    // 🚨 Si tu backend espera **_id** en vez de nombre, cambiar abajo
+    const handleInclude = (ing: string) => {
+        setIncludeIngredients(prev => [...new Set([...prev, ing])]);
+    };
+
+    const handleExclude = (ing: string) => {
+        setExcludeIngredients(prev => [...new Set([...prev, ing])]);
+    };
+
+    // Filtro para aplicar búsqueda por ingredientes
     const handleApplyFilters = async () => {
         const [sortBy, order] = selectedOrder.split('_');
         const params = new URLSearchParams({ sortBy, order });
 
+        // ⬇️ Si tu backend espera _id, hacer:
+        // if (includeIngredients.length > 0) params.append('contains', includeIngredients.map(id => id).join(','));
+        // else (como está, por nombre):
         if (includeIngredients.length > 0) params.append('contains', includeIngredients.join(','));
         if (excludeIngredients.length > 0) params.append('notContains', excludeIngredients.join(','));
 
         params.append('isVerificated', 'true');
-
-
         try {
             const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies?${params.toString()}`);
             const data = await res.json();
@@ -109,7 +132,6 @@ export default function SearchScreen() {
     };
 
     useEffect(() => {
-
         const fetchResults = async () => {
             try {
                 const [sortBy, order] = selectedOrder.split('_');
@@ -150,6 +172,7 @@ export default function SearchScreen() {
                 <Text style={styles.title}>Buscador</Text>
             </View>
 
+            {/* Search input + dropdown super pegados */}
             <View style={{ position: 'relative', zIndex: 10 }}>
                 <SearchBar
                     value={searchText}
@@ -157,38 +180,37 @@ export default function SearchScreen() {
                     placeholder={`Buscar recetas por ${searchType == 'receta' ? 'nombre' : searchType}`}
                     onFocus={() => {
                         if (searchType === 'ingredientes') {
-                          setDropdownVisible(prev => !prev);
+                            setDropdownVisible(true);
                         }
-                      }}
+                    }}
                 />
+                {searchType === 'ingredientes' && dropdownVisible && (
+                    <View style={styles.dropdownWrapper}>
+                        <ScrollView
+                            style={styles.dropdown}
+                            nestedScrollEnabled
+                            keyboardShouldPersistTaps="handled"
+                            scrollEnabled
+                        >
+                            {ingredientResults.length > 0 ? (
+                                ingredientResults.map((item) => (
+                                    <TouchableOpacity
+                                        key={item._id}
+                                        onPress={() => handleIngredientSelect(item.name)}
+                                        style={styles.dropdownItem}
+                                    >
+                                        <Text>{item.name}</Text>
+                                    </TouchableOpacity>
+                                ))
+                            ) : (
+                                <View style={styles.dropdownItem}>
+                                    <Text>No se encontraron ingredientes.</Text>
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+                )}
             </View>
-
-            {searchType === 'ingredientes' && dropdownVisible && (
-                <View style={{ position: 'absolute', top: 130, left: 24, right: 24, zIndex: 9999, elevation: 10 }}>
-                    <ScrollView
-                        style={styles.dropdown}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="handled"
-                        scrollEnabled
-                    >
-                        {ingredientResults.length > 0 ? (
-                            ingredientResults.map((item) => (
-                                <TouchableOpacity
-                                    key={item._id}
-                                    onPress={() => handleIngredientSelect(item.name)}
-                                    style={styles.dropdownItem}
-                                >
-                                    <Text>{item.name}</Text>
-                                </TouchableOpacity>
-                            ))
-                        ) : (
-                            <View style={styles.dropdownItem}>
-                                <Text>No se encontraron ingredientes.</Text>
-                            </View>
-                        )}
-                    </ScrollView>
-                </View>
-            )}
 
             <View style={styles.filterRow}>
                 <TouchableOpacity style={styles.orderButton} onPress={() => setOrderModalVisible(true)}>
@@ -291,9 +313,9 @@ export default function SearchScreen() {
             <IngredientModal
                 visible={ingredientModalVisible}
                 ingredient={selectedIngredient}
-                onClose={() => setIngredientModalVisible(false)}
-                onInclude={(ing) => setIncludeIngredients(prev => [...new Set([...prev, ing])])}
-                onExclude={(ing) => setExcludeIngredients(prev => [...new Set([...prev, ing])])}
+                onClose={handleCloseIngredientModal}
+                onInclude={handleInclude}
+                onExclude={handleExclude}
             />
         </ThemedView>
     );
@@ -330,26 +352,6 @@ const styles = StyleSheet.create({
     },
     orderButtonText: {
         color: '#333',
-    },
-    dropdown: {
-        position: 'absolute',
-        top: 17,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderTopWidth: 0,
-        borderBottomLeftRadius: 8,
-        borderBottomRightRadius: 8,
-        maxHeight: 180,
-        zIndex: 9999,
-        elevation: 10
-    },
-    dropdownItem: {
-        padding: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
     },
     sectionTitle: {
         fontWeight: '600',
@@ -394,5 +396,28 @@ const styles = StyleSheet.create({
     backToFiltersText: {
         color: '#025E45',
         fontWeight: '600'
-    }
+    },
+    dropdownWrapper: {
+        position: 'absolute',
+        top: 48,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        elevation: 10,
+    },
+    dropdown: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderTopWidth: 0,
+        borderBottomLeftRadius: 8,
+        borderBottomRightRadius: 8,
+        maxHeight: 180,
+    },
+    dropdownItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
 });
+

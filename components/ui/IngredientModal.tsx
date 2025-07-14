@@ -1,13 +1,13 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useEffect, useRef } from 'react';
 import {
-    Animated,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Animated,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface IngredientModalProps {
@@ -116,7 +116,9 @@ const styles = StyleSheet.create({
     color: 'white'
   },
   closeIcon: {
-    marginTop: 16,
-    alignItems: 'center'
-  }
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 2,
+  },
 });
