@@ -21,26 +21,34 @@ import SuccessModal from '../../components/ui/SuccessModal';
 import WarningModal from '../../components/ui/WarningModal';
 import { useConnection } from '../../contexts/ConnectionContext';
 
-// --- Parseadores extendidos y con tipado any ---
-const parseIngredientes = (arr: any[] = []) =>
-  arr && arr.length > 0
-    ? arr.map((i: any) => ({
-        nombre: i.nombre || i.name || i.ingredient || '',
-        cantidad:
-          i.cantidad !== undefined ? String(i.cantidad) :
-          i.quantity !== undefined ? String(i.quantity) :
-          '',
-        unidad: i.unidad || i.unit || i.medida || ''
-      }))
-    : [{ nombre: '', cantidad: '', unidad: '' }];
+// --- Parseadores robustos ---
+const parseIngredientes = (arr: any[] = []) => {
+  if (!Array.isArray(arr) || arr.length === 0)
+    return [{ nombre: '', cantidad: '', unidad: '' }];
+  return arr.map((i: any) => ({
+    nombre: i.nombre || i.name || i.ingredient || '',
+    cantidad:
+      i.cantidad !== undefined
+        ? String(i.cantidad)
+        : i.quantity !== undefined
+        ? String(i.quantity)
+        : '',
+    unidad: i.unidad || i.unit || i.medida || '',
+  }));
+};
 
-const parsePasos = (arr: any[] = []) =>
-  arr && arr.length > 0
-    ? arr.map((p: any) => ({
-        descripcion: p.descripcion || p.description || p.texto || '',
-        media: p.media || p.image || null
-      }))
-    : [{ descripcion: '', media: null }];
+const parsePasos = (arr: any[] = []) => {
+  if (!Array.isArray(arr) || arr.length === 0)
+    return [{ descripcion: '', media: null }];
+  return arr.map((p: any) => ({
+    descripcion: p.descripcion || p.description || p.texto || '',
+    media:
+      (p.urls && p.urls[0]) ||
+      p.media ||
+      p.image ||
+      null,
+  }));
+};
 
 type Step = 'titulo' | 'conflicto' | 'formulario';
 
@@ -79,13 +87,11 @@ export default function CargarRecetaWizard() {
   const [ingredientesSugeridos, setIngredientesSugeridos] = useState<any[]>([]);
   const [loadingIngredientes, setLoadingIngredientes] = useState(false);
 
-  const [hideModal, setHideModal] = useState(false);
-  // Cambiar la condición de shouldShowModal para usar isWifi
-  const shouldShowModal = false; // Eliminado: isWifi === false && !allowMobileData && !hideModal;
   const [showWifiModal, setShowWifiModal] = useState(false);
   const [userAlias, setUserAlias] = useState<string | null>(null);
 
   const { isConnected, type } = useConnection();
+  const router = useRouter();
 
   useEffect(() => {
     const getAlias = async () => {
@@ -98,9 +104,6 @@ export default function CargarRecetaWizard() {
     getAlias();
   }, []);
 
-  const router = useRouter();
-
-  // -------- OBTENER USUARIO LOGUEADO --------
   useEffect(() => {
     const getUser = async () => {
       const info = await AsyncStorage.getItem('userInfo');
@@ -112,7 +115,6 @@ export default function CargarRecetaWizard() {
     getUser();
   }, []);
 
-  // -------- FETCH CATEGORÍAS --------
   useEffect(() => {
     const fetchAllCategories = async () => {
       setLoadingCategorias(true);
@@ -123,7 +125,7 @@ export default function CargarRecetaWizard() {
           setAllCategories(data.categories);
           setCategoriasFiltradas(data.categories);
         }
-      } catch { }
+      } catch {}
       finally { setLoadingCategorias(false); }
     };
     if (categoriaModal && allCategories.length === 0) fetchAllCategories();
@@ -146,7 +148,6 @@ export default function CargarRecetaWizard() {
     setCategoriaFiltro('');
   };
 
-  // -------- FETCH INGREDIENTES --------
   useEffect(() => {
     const fetchAllIngredients = async () => {
       setLoadingIngredientes(true);
@@ -157,7 +158,7 @@ export default function CargarRecetaWizard() {
           setAllIngredients(data.ingredients);
           setIngredientesSugeridos(data.ingredients);
         }
-      } catch { }
+      } catch {}
       finally { setLoadingIngredientes(false); }
     };
     if (ingredienteModalIndex !== null && allIngredients.length === 0) fetchAllIngredients();
@@ -193,7 +194,6 @@ export default function CargarRecetaWizard() {
     try {
       const res = await fetch(url);
       const data = await res.json();
-      // Buscar coincidencia exacta, case-insensitive
       if (Array.isArray(data.payload)) {
         const receta = data.payload.find(
           (r: any) => r.title.trim().toLowerCase() === titulo.trim().toLowerCase()
@@ -232,8 +232,23 @@ export default function CargarRecetaWizard() {
     }
   };
 
-  // --------- SIEMPRE POST: CARGA UNA RECETA NUEVA ---------
-  // Aunque edites datos de una receta existente, esto siempre hace POST (crear nueva)
+  // --- FUNCIONES PARA FORMATO INGREDIENTES Y PASOS ---
+  function ingredientesParaBackend() {
+    return ingredientes.map(i => ({
+      name: i.nombre,
+      quantity: i.cantidad,
+      unit: i.unidad
+    }));
+  }
+
+  function pasosParaBackend() {
+    return pasos.map(p => ({
+      description: p.descripcion,      // Cambiá a "texto" si tu backend lo pide, pero usualmente es "description"
+      urls: p.media ? [p.media] : []
+    }));
+  }
+
+  // --------- CREAR RECETA NUEVA (POST) ---------
   const enviarReceta = async () => {
     if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
       setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
@@ -249,17 +264,18 @@ export default function CargarRecetaWizard() {
       formData.append('description', descripcion);
       formData.append('category', categoria);
       formData.append('portions', porciones);
-      formData.append('ingredients', JSON.stringify(ingredientes));
-      formData.append('stepsList', JSON.stringify(pasos));
+      formData.append('ingredients', JSON.stringify(ingredientesParaBackend()));
+      formData.append('stepsList', JSON.stringify(pasosParaBackend()));
       formData.append('aditionalMedia', JSON.stringify([]));
-      formData.append('isVerified', 'false'); // Omitilo si tu back no lo usa
+      formData.append('isVerificated', 'false');
 
       if (fotoFinal) {
+        // @ts-ignore
         formData.append('image', {
           uri: fotoFinal,
           type: 'image/jpeg',
           name: `foto_${Date.now()}.jpg`,
-        } as any);
+        });
       }
 
       const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
@@ -273,7 +289,6 @@ export default function CargarRecetaWizard() {
       if (!res.ok) throw new Error('Error al enviar la receta');
       setModalExito(true);
 
-      // Limpiar los campos
       setTitulo('');
       setDescripcion('');
       setCategoria('');
@@ -285,6 +300,116 @@ export default function CargarRecetaWizard() {
       setModalError({ visible: true, mensaje: err.message || 'No se pudo enviar la receta' });
     }
     setLoading(false);
+  };
+
+  // --------- MODIFICAR RECETA EXISTENTE (PUT) ---------
+  const modificarReceta = async () => {
+    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
+      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
+      return;
+    }
+    if (!recetaId) {
+      setModalError({ visible: true, mensaje: 'No hay receta a modificar' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) throw new Error('Token no encontrado');
+
+      let body;
+      let headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      if (fotoFinal && fotoFinal.startsWith('file')) {
+        body = new FormData();
+        body.append('title', titulo);
+        body.append('description', descripcion);
+        body.append('category', categoria);
+        body.append('portions', porciones);
+        body.append('ingredients', JSON.stringify(ingredientesParaBackend()));
+        body.append('stepsList', JSON.stringify(pasosParaBackend()));
+        body.append('aditionalMedia', JSON.stringify([]));
+        body.append('isVerificated', 'false');
+        // @ts-ignore
+        body.append('image', {
+          uri: fotoFinal,
+          type: 'image/jpeg',
+          name: `foto_${Date.now()}.jpg`,
+        });
+      } else {
+        body = JSON.stringify({
+          title: titulo,
+          description: descripcion,
+          category: categoria,
+          portions: porciones,
+          ingredients: ingredientesParaBackend(),
+          stepsList: pasosParaBackend(),
+          aditionalMedia: [],
+          image_url: fotoFinal,
+          isVerificated: false,
+        });
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`, {
+        method: 'PUT',
+        headers,
+        body,
+      });
+
+      if (!res.ok) throw new Error('Error al modificar la receta');
+      setModalExito(true);
+
+      setTitulo('');
+      setDescripcion('');
+      setCategoria('');
+      setPorciones('');
+      setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
+      setPasos([{ descripcion: '', media: null }]);
+      setFotoFinal(null);
+    } catch (err: any) {
+      setModalError({ visible: true, mensaje: err.message || 'No se pudo modificar la receta' });
+    }
+    setLoading(false);
+  };
+
+  // ----------- ENVIAR O MODIFICAR SEGÚN CONTEXTO -----------
+  const handleCargarReceta = () => {
+    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
+      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
+      return;
+    }
+    if (!isConnected) {
+      if (!userAlias) return;
+      const receta = {
+        titulo,
+        descripcion,
+        categoria,
+        porciones,
+        ingredientes,
+        pasos,
+        fotoFinal,
+      };
+      AsyncStorage.getItem(`pendingRecipes_${userAlias}`).then(data => {
+        const borradores = data ? JSON.parse(data) : [];
+        borradores.push(receta);
+        AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores)).then(() => {
+          setSuccessDraft(true);
+        });
+      });
+      return;
+    }
+    if (type === 'cellular') {
+      setShowWifiModal(true);
+      return;
+    }
+    if (recetaId) {
+      modificarReceta();
+    } else {
+      enviarReceta();
+    }
   };
 
   // ----------- UI -----------
@@ -335,8 +460,6 @@ export default function CargarRecetaWizard() {
             <Text style={styles.buttonText}>Siguiente</Text>
           )}
         </TouchableOpacity>
-
-        {/* MODALES */}
         <SuccessModal
           visible={modalExito}
           onClose={() => {
@@ -352,7 +475,6 @@ export default function CargarRecetaWizard() {
           title="Error"
           message={modalError.mensaje}
         />
-        {/* Eliminado: <NoInternetModal visible={shouldShowModal} onContinueWithMobile={() => setAllowMobileData(true)} onClose={() => setHideModal(true)} isLanding={true} /> */}
       </KeyboardAvoidingView>
     );
   }
@@ -399,47 +521,13 @@ export default function CargarRecetaWizard() {
           title="Error"
           message={modalError.mensaje}
         />
-        {/* Eliminado: <NoInternetModal visible={shouldShowModal} onContinueWithMobile={() => setAllowMobileData(true)} onClose={() => setHideModal(true)} isLanding={true} /> */}
       </View>
     );
   }
 
   // ---------- FORMULARIO ----------
-  const handleCargarReceta = () => {
-    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
-      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
-      return;
-    }
-    if (!isConnected) {
-      // Guardar en borradores si no hay conexión
-      if (!userAlias) return;
-      const receta = {
-        titulo,
-        descripcion,
-        categoria,
-        porciones,
-        ingredientes,
-        pasos,
-        fotoFinal,
-      };
-      AsyncStorage.getItem(`pendingRecipes_${userAlias}`).then(data => {
-        const borradores = data ? JSON.parse(data) : [];
-        borradores.push(receta);
-        AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores)).then(() => {
-          setSuccessDraft(true);
-        });
-      });
-      return;
-    }
-    if (type === 'cellular') {
-      setShowWifiModal(true);
-      return;
-    }
-    enviarReceta();
-  };
-
   return (
-    <ScrollView contentContainerStyle={[styles.fullScreen,{ paddingBottom: 60 }]}>
+    <ScrollView contentContainerStyle={[styles.fullScreen, { paddingBottom: 60 }]}>
       <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
         <Text style={styles.closeText}>×</Text>
       </TouchableOpacity>
@@ -574,11 +662,33 @@ export default function CargarRecetaWizard() {
             </Text>
           </TouchableOpacity>
           {paso.media && (
+          <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 90, height: 90 }}>
             <Image
               source={{ uri: paso.media }}
-              style={{ width: 90, height: 90, borderRadius: 10, alignSelf: 'center', marginBottom: 8 }}
+              style={{ width: 90, height: 90, borderRadius: 10 }}
             />
-          )}
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                backgroundColor: '#FFF',
+                borderRadius: 10,
+                paddingHorizontal: 5,
+                paddingVertical: 2,
+                zIndex: 10,
+                elevation: 4,
+              }}
+              onPress={() => {
+                const nuevos = [...pasos];
+                nuevos[index].media = null;
+                setPasos(nuevos);
+              }}
+            >
+              <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#D32F2F', lineHeight: 17 }}>×</Text>
+            </TouchableOpacity>
+          </View>
+        )}
           {index > 0 && (
             <TouchableOpacity
               onPress={() => setPasos(pasos.filter((_, i) => i !== index))}
@@ -620,11 +730,29 @@ export default function CargarRecetaWizard() {
         <Text style={styles.addButtonText}>{fotoFinal ? 'Cambiar foto' : 'Agregar foto'}</Text>
       </TouchableOpacity>
       {fotoFinal && (
-        <Image
-          source={{ uri: fotoFinal }}
-          style={{ width: 120, height: 120, borderRadius: 12, alignSelf: 'center', marginBottom: 8 }}
-        />
-      )}
+      <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 120, height: 120 }}>
+      <Image
+        source={{ uri: fotoFinal }}
+        style={{ width: 120, height: 120, borderRadius: 12 }}
+      />
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: 2,
+          right: 2,
+          backgroundColor: '#FFF',
+          borderRadius: 12,
+          paddingHorizontal: 6,
+          paddingVertical: 2,
+          zIndex: 10,
+          elevation: 4,
+        }}
+        onPress={() => setFotoFinal(null)}
+      >
+        <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#D32F2F', lineHeight: 20 }}>×</Text>
+      </TouchableOpacity>
+    </View>
+    )}
 
       {/* Botón de envío */}
       <TouchableOpacity
@@ -635,7 +763,7 @@ export default function CargarRecetaWizard() {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Cargar receta</Text>
+          <Text style={styles.buttonText}>{recetaId ? 'Modificar receta' : 'Cargar receta'}</Text>
         )}
       </TouchableOpacity>
 
@@ -647,7 +775,7 @@ export default function CargarRecetaWizard() {
           router.back();
         }}
         title="¡Éxito!"
-        message="Receta cargada. Queda pendiente de aprobación."
+        message="Receta enviada. Está pendiente de aprobación."
       />
       <WarningModal
         visible={modalError.visible}
@@ -721,7 +849,6 @@ export default function CargarRecetaWizard() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-      {/* Eliminado: <NoInternetModal visible={shouldShowModal} onContinueWithMobile={() => setAllowMobileData(true)} onClose={() => setHideModal(true)} isLanding={true} /> */}
       <PublishRecipeNoWifiModal
         visible={showWifiModal}
         onPublishWithMobile={async () => {
@@ -731,7 +858,6 @@ export default function CargarRecetaWizard() {
         }}
         onPublishWithWifi={async () => {
           setShowWifiModal(false);
-          // Guardar la receta como borrador por usuario
           if (!userAlias) return;
           const receta = {
             titulo,
