@@ -303,7 +303,6 @@ export default function CargarRecetaWizard() {
 
       if (fotoFinal) {
           imageUrl = await uploadImageToCloudinary(fotoFinal);
-          console.log(imageUrl)
         }
 
     const pasosConImagenes = await Promise.all(
