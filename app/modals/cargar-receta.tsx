@@ -7,9 +7,7 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
+  Modal, Platform, ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -31,8 +29,8 @@ const parseIngredientes = (arr: any[] = []) => {
       i.cantidad !== undefined
         ? String(i.cantidad)
         : i.quantity !== undefined
-        ? String(i.quantity)
-        : '',
+          ? String(i.quantity)
+          : '',
     unidad: i.unidad || i.unit || i.medida || '',
   }));
 };
@@ -49,6 +47,47 @@ const parsePasos = (arr: any[] = []) => {
       null,
   }));
 };
+
+const uploadImageToCloudinary = async (uri: string): Promise<string> => {
+  const formData = new FormData();
+
+  const filename = uri.split('/').pop() || 'image.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const ext = match ? match[1] : 'jpg';
+  const type = `image/${ext}`;
+
+  let fileData: any;
+
+  if (Platform.OS === 'web') {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    fileData = blob;
+  } else {
+    fileData = {
+      uri,
+      name: filename,
+      type,
+    } as any;
+  }
+
+  formData.append('file', fileData);
+  formData.append('upload_preset', 'ml_default');
+
+  const res = await fetch('https://api.cloudinary.com/v1_1/drvtr4kxz/image/upload', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const result = await res.json();
+
+  if (!result.secure_url) {
+    console.error('Error Cloudinary:', result);
+    throw new Error('No se pudo subir la imagen a Cloudinary');
+  }
+
+  return result.secure_url;
+};
+
 
 type Step = 'titulo' | 'conflicto' | 'formulario';
 
@@ -125,7 +164,7 @@ export default function CargarRecetaWizard() {
           setAllCategories(data.categories);
           setCategoriasFiltradas(data.categories);
         }
-      } catch {}
+      } catch { }
       finally { setLoadingCategorias(false); }
     };
     if (categoriaModal && allCategories.length === 0) fetchAllCategories();
@@ -158,7 +197,7 @@ export default function CargarRecetaWizard() {
           setAllIngredients(data.ingredients);
           setIngredientesSugeridos(data.ingredients);
         }
-      } catch {}
+      } catch { }
       finally { setLoadingIngredientes(false); }
     };
     if (ingredienteModalIndex !== null && allIngredients.length === 0) fetchAllIngredients();
@@ -254,41 +293,64 @@ export default function CargarRecetaWizard() {
       setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
       return;
     }
+
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) throw new Error('Token no encontrado');
 
-      const formData = new FormData();
-      formData.append('title', titulo);
-      formData.append('description', descripcion);
-      formData.append('category', categoria);
-      formData.append('portions', porciones);
-      formData.append('ingredients', JSON.stringify(ingredientesParaBackend()));
-      formData.append('stepsList', JSON.stringify(pasosParaBackend()));
-      formData.append('aditionalMedia', JSON.stringify([]));
-      formData.append('isVerificated', 'false');
+      let imageUrl = null;
 
       if (fotoFinal) {
-        // @ts-ignore
-        formData.append('image', {
-          uri: fotoFinal,
-          type: 'image/jpeg',
-          name: `foto_${Date.now()}.jpg`,
-        });
-      }
+          imageUrl = await uploadImageToCloudinary(fotoFinal);
+          console.log(imageUrl)
+        }
+
+    const pasosConImagenes = await Promise.all(
+      pasos.map(async (p) => {
+        let url = p.media;
+
+        if (p.media && p.media.startsWith('file')) {
+          try {
+            url = await uploadImageToCloudinary(p.media);
+          } catch (e) {
+            console.error('Error al subir imagen de paso:', e);
+            throw new Error('Error al subir una imagen de paso');
+          }
+        }
+
+        return {
+          description: p.descripcion,
+          urls: url ? [url] : [],
+        };
+      })
+    );
+
+      const body = {
+        title: titulo,
+        description: descripcion,
+        category: categoria,
+        portions: porciones,
+        ingredients: ingredientesParaBackend(),
+        stepsList: pasosConImagenes,
+        aditionalMedia: [],
+        image_url: imageUrl,
+        isVerificated: false,
+      };
 
       const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) throw new Error('Error al enviar la receta');
       setModalExito(true);
 
+      // Limpiar formulario
       setTitulo('');
       setDescripcion('');
       setCategoria('');
@@ -296,11 +358,13 @@ export default function CargarRecetaWizard() {
       setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
       setPasos([{ descripcion: '', media: null }]);
       setFotoFinal(null);
+
     } catch (err: any) {
       setModalError({ visible: true, mensaje: err.message || 'No se pudo enviar la receta' });
     }
     setLoading(false);
   };
+
 
   // --------- MODIFICAR RECETA EXISTENTE (PUT) ---------
   const modificarReceta = async () => {
@@ -662,33 +726,33 @@ export default function CargarRecetaWizard() {
             </Text>
           </TouchableOpacity>
           {paso.media && (
-          <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 90, height: 90 }}>
-            <Image
-              source={{ uri: paso.media }}
-              style={{ width: 90, height: 90, borderRadius: 10 }}
-            />
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                backgroundColor: '#FFF',
-                borderRadius: 10,
-                paddingHorizontal: 5,
-                paddingVertical: 2,
-                zIndex: 10,
-                elevation: 4,
-              }}
-              onPress={() => {
-                const nuevos = [...pasos];
-                nuevos[index].media = null;
-                setPasos(nuevos);
-              }}
-            >
-              <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#D32F2F', lineHeight: 17 }}>×</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+            <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 90, height: 90 }}>
+              <Image
+                source={{ uri: paso.media }}
+                style={{ width: 90, height: 90, borderRadius: 10 }}
+              />
+              <TouchableOpacity
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  backgroundColor: '#FFF',
+                  borderRadius: 10,
+                  paddingHorizontal: 5,
+                  paddingVertical: 2,
+                  zIndex: 10,
+                  elevation: 4,
+                }}
+                onPress={() => {
+                  const nuevos = [...pasos];
+                  nuevos[index].media = null;
+                  setPasos(nuevos);
+                }}
+              >
+                <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#D32F2F', lineHeight: 17 }}>×</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {index > 0 && (
             <TouchableOpacity
               onPress={() => setPasos(pasos.filter((_, i) => i !== index))}
@@ -730,29 +794,29 @@ export default function CargarRecetaWizard() {
         <Text style={styles.addButtonText}>{fotoFinal ? 'Cambiar foto' : 'Agregar foto'}</Text>
       </TouchableOpacity>
       {fotoFinal && (
-      <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 120, height: 120 }}>
-      <Image
-        source={{ uri: fotoFinal }}
-        style={{ width: 120, height: 120, borderRadius: 12 }}
-      />
-      <TouchableOpacity
-        style={{
-          position: 'absolute',
-          top: 2,
-          right: 2,
-          backgroundColor: '#FFF',
-          borderRadius: 12,
-          paddingHorizontal: 6,
-          paddingVertical: 2,
-          zIndex: 10,
-          elevation: 4,
-        }}
-        onPress={() => setFotoFinal(null)}
-      >
-        <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#D32F2F', lineHeight: 20 }}>×</Text>
-      </TouchableOpacity>
-    </View>
-    )}
+        <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 120, height: 120 }}>
+          <Image
+            source={{ uri: fotoFinal }}
+            style={{ width: 120, height: 120, borderRadius: 12 }}
+          />
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 2,
+              right: 2,
+              backgroundColor: '#FFF',
+              borderRadius: 12,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              zIndex: 10,
+              elevation: 4,
+            }}
+            onPress={() => setFotoFinal(null)}
+          >
+            <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#D32F2F', lineHeight: 20 }}>×</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Botón de envío */}
       <TouchableOpacity
