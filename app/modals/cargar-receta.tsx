@@ -366,77 +366,87 @@ export default function CargarRecetaWizard() {
 
 
   // --------- MODIFICAR RECETA EXISTENTE (PUT) ---------
-  const modificarReceta = async () => {
-    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
-      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
-      return;
-    }
-    if (!recetaId) {
-      setModalError({ visible: true, mensaje: 'No hay receta a modificar' });
-      return;
-    }
-    setLoading(true);
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) throw new Error('Token no encontrado');
+const modificarReceta = async () => {
+  if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
+    setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
+    return;
+  }
+  if (!recetaId) {
+    setModalError({ visible: true, mensaje: 'No hay receta a modificar' });
+    return;
+  }
 
-      let body;
-      let headers: Record<string, string> = {
+  setLoading(true);
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (!token) throw new Error('Token no encontrado');
+
+    // 1. Subir imagen final si es local
+    let imageUrl = fotoFinal;
+    if (fotoFinal && fotoFinal.startsWith('file')) {
+      imageUrl = await uploadImageToCloudinary(fotoFinal);
+    }
+
+    // 2. Subir imágenes de pasos si son locales
+    const pasosConImagenes = await Promise.all(
+      pasos.map(async (p) => {
+        let url = p.media;
+
+        if (p.media && p.media.startsWith('file')) {
+          try {
+            url = await uploadImageToCloudinary(p.media);
+          } catch (e) {
+            console.error('Error al subir imagen de paso:', e);
+            throw new Error('Error al subir una imagen de paso');
+          }
+        }
+
+        return {
+          description: p.descripcion,
+          urls: url ? [url] : [],
+        };
+      })
+    );
+
+    // 3. Armar body
+    const body = {
+      title: titulo,
+      description: descripcion,
+      category: categoria,
+      portions: porciones,
+      ingredients: ingredientesParaBackend(),
+      stepsList: pasosConImagenes,
+      aditionalMedia: [],
+      image_url: imageUrl,
+      isVerificated: false,
+    };
+
+    const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`, {
+      method: 'PUT',
+      headers: {
         'Authorization': `Bearer ${token}`,
-      };
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-      if (fotoFinal && fotoFinal.startsWith('file')) {
-        body = new FormData();
-        body.append('title', titulo);
-        body.append('description', descripcion);
-        body.append('category', categoria);
-        body.append('portions', porciones);
-        body.append('ingredients', JSON.stringify(ingredientesParaBackend()));
-        body.append('stepsList', JSON.stringify(pasosParaBackend()));
-        body.append('aditionalMedia', JSON.stringify([]));
-        body.append('isVerificated', 'false');
-        // @ts-ignore
-        body.append('image', {
-          uri: fotoFinal,
-          type: 'image/jpeg',
-          name: `foto_${Date.now()}.jpg`,
-        });
-      } else {
-        body = JSON.stringify({
-          title: titulo,
-          description: descripcion,
-          category: categoria,
-          portions: porciones,
-          ingredients: ingredientesParaBackend(),
-          stepsList: pasosParaBackend(),
-          aditionalMedia: [],
-          image_url: fotoFinal,
-          isVerificated: false,
-        });
-        headers['Content-Type'] = 'application/json';
-      }
+    if (!res.ok) throw new Error('Error al modificar la receta');
 
-      const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`, {
-        method: 'PUT',
-        headers,
-        body,
-      });
+    setModalExito(true);
+    setTitulo('');
+    setDescripcion('');
+    setCategoria('');
+    setPorciones('');
+    setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
+    setPasos([{ descripcion: '', media: null }]);
+    setFotoFinal(null);
 
-      if (!res.ok) throw new Error('Error al modificar la receta');
-      setModalExito(true);
+  } catch (err: any) {
+    setModalError({ visible: true, mensaje: err.message || 'No se pudo modificar la receta' });
+  }
+  setLoading(false);
+};
 
-      setTitulo('');
-      setDescripcion('');
-      setCategoria('');
-      setPorciones('');
-      setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
-      setPasos([{ descripcion: '', media: null }]);
-      setFotoFinal(null);
-    } catch (err: any) {
-      setModalError({ visible: true, mensaje: err.message || 'No se pudo modificar la receta' });
-    }
-    setLoading(false);
-  };
 
   // ----------- ENVIAR O MODIFICAR SEGÚN CONTEXTO -----------
   const handleCargarReceta = () => {
