@@ -4,7 +4,7 @@
     "slug": "bonAppettitFrontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/bon-appetit-splash-1024x1024.png",
     "scheme": "bonappettitfrontend",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -18,7 +18,7 @@
       },
       "edgeToEdge": true,
       "navigationBar": {
-        "visible": "auto",         // Cambia a "immersive" si querés ocultar todo el sistema
+        "visible": "auto",         
         "barStyle": "light-content" 
       },
       "package": "com.juanirios.bonAppettitFrontend"
@@ -33,8 +33,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image":  "./assets/images/bon-appetit-splash-1024x1024.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
