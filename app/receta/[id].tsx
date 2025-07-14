@@ -248,9 +248,6 @@ export default function RecipePage() {
             style={{ marginLeft: 2 }}
           />
         </View>
-        <Text style={{ fontSize: 16, }}>
-            {recipe.description}
-          </Text>
       </View>
 
       {/* Main image */}
@@ -274,6 +271,14 @@ export default function RecipePage() {
           {recipe.category}
         </Text>
       </View>
+
+
+      <View style={styles.infoRow}>
+        <Text style={{ fontSize: 16, }}>
+          {recipe.description}
+        </Text>
+      </View>
+
 
       {/* Ingredients */}
       <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Ingredientes</Text>
