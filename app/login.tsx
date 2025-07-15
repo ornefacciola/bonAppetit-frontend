@@ -1,5 +1,6 @@
 //app/login.tsx
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -28,8 +29,23 @@ export default function LoginScreen() {
   const [secure, setSecure] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('')
-
   const [emailValid, setEmailValid] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  React.useEffect(() => {
+    // Al montar, buscar credenciales guardadas
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem('savedCredentials');
+        if (saved) {
+          const { email, password } = JSON.parse(saved);
+          setEmail(email);
+          setPassword(password);
+          setRememberMe(true);
+        }
+      } catch {}
+    })();
+  }, []);
 
   const validateEmail = (e: string) => /\S+@\S+\.\S+/.test(e);
 
@@ -54,6 +70,11 @@ export default function LoginScreen() {
       const data = await response.json();
   
       if (response.ok) {
+        if (rememberMe) {
+          await AsyncStorage.setItem('savedCredentials', JSON.stringify({ email, password }));
+        } else {
+          await AsyncStorage.removeItem('savedCredentials');
+        }
         await login(data.token);
         router.replace('/(tabs)/home');
       } else {
@@ -103,30 +124,46 @@ export default function LoginScreen() {
               if (!emailValid) setEmailValid(true)
             }}
             onBlur={() => setEmailValid(validateEmail(email))}
+            autoComplete="email"
+            textContentType="emailAddress"
           />
           {!emailValid && (
             <ThemedText style={styles.errorMessage}>
               email is required
             </ThemedText>
           )}
-          </View>
-          <ThemedText type="defaultSemiBold" style={styles.label}>
-            CONTRASEÑA
-          </ThemedText>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="••••••••"
-              placeholderTextColor="#9E9E9E"
-              secureTextEntry={secure}
-              autoCapitalize="none"
-              value={password}
-              onChangeText={setPassword}
-            />
-            <Pressable onPress={() => setSecure(!secure)}>
-              <Ionicons name={secure ? 'eye-off' : 'eye'} size={24} color="#9E9E9E" />
-            </Pressable>
-          </View>
+        </View>
+        <ThemedText type="defaultSemiBold" style={styles.label}>
+          CONTRASEÑA
+        </ThemedText>
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="••••••••"
+            placeholderTextColor="#9E9E9E"
+            secureTextEntry={secure}
+            autoCapitalize="none"
+            value={password}
+            onChangeText={setPassword}
+            autoComplete="password"
+            textContentType="password"
+          />
+          <Pressable onPress={() => setSecure(!secure)}>
+            <Ionicons name={secure ? 'eye-off' : 'eye'} size={24} color="#9E9E9E" />
+          </Pressable>
+        </View>
+        {/* Checkbox recordar mis datos */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, marginTop:-25}}>
+          <Pressable
+            onPress={() => setRememberMe(v => !v)}
+            style={{
+              width: 15, height: 15, borderWidth: 1, borderColor: '#025E45', borderRadius: 4, marginRight: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: rememberMe ? '#025E45' : '#fff'
+            }}
+          >
+            {rememberMe && <Ionicons name="checkmark" size={10} color="#fff" />}
+          </Pressable>
+          <ThemedText style={{ color: '#025E45', fontWeight: 'bold', fontSize: 13 }}>Recordar mis datos</ThemedText>
+        </View>
           {error && (
             <ThemedText style={styles.generalErrorMessage}>
               {error}
@@ -269,7 +306,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 0,
+    marginTop: 15
   },
   buttonText: {
     color: '#FFFFFF',
@@ -325,5 +363,26 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+  },
+  suggestionsBox: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    zIndex: 10,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  suggestionItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
 });
