@@ -8,14 +8,14 @@ import {
   View
 } from 'react-native';
 
-interface WarningModalProps {
+interface ErrorModalProps {
   visible: boolean;
   onClose: () => void;
   title: string;
   message: string;
 }
 
-const WarningModal: React.FC<WarningModalProps> = ({ visible, onClose, title, message }) => {
+const ErrorModal: React.FC<ErrorModalProps> = ({ visible, onClose, title, message }) => {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -25,12 +25,12 @@ const WarningModal: React.FC<WarningModalProps> = ({ visible, onClose, title, me
           </TouchableOpacity>
           <View style={styles.centeredContent}>
             <View style={styles.iconContainer}>
-              <Ionicons name="alert-circle" size={64} color="#FFA000" />
+              <Ionicons name="close-circle" size={64} color="#EF5350" />
             </View>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.msg}>{message}</Text>
             <TouchableOpacity style={styles.btn} onPress={onClose}>
-              <Text style={styles.btnText}>Cerrar</Text>
+              <Text style={styles.btnText}>Continuar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   btn: {
-    backgroundColor: '#FFA000',
+    backgroundColor: '#EF5350',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 32,
@@ -99,4 +99,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WarningModal;
+export default ErrorModal;

@@ -1,26 +1,25 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useConnection } from '../../contexts/ConnectionContext';
 
 const GlobalConnectionModal: React.FC = () => {
-  const { isConnected, type } = useConnection();
+  const { isConnected } = useConnection();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!isConnected) {
-      setVisible(true);
-    } else {
-      setVisible(false);
-    }
+    setVisible(!isConnected);
   }, [isConnected]);
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.modal}>
+          <TouchableOpacity style={styles.closeBtn} onPress={() => setVisible(false)}>
+            <MaterialCommunityIcons name="close" size={28} color="#222" />
+          </TouchableOpacity>
           <View style={styles.centeredContent}>
-            <MaterialIcons name="signal-wifi-off" size={64} color="#222" style={styles.icon} />
+            <MaterialCommunityIcons name="wifi-off" size={64} color="#222" style={styles.icon} />
             <Text style={styles.title}>No hay conexión a Internet</Text>
             <Text style={styles.subtitle}>
               Parece que no tenés conexión.{"\n"}
@@ -48,6 +47,15 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     position: 'relative',
+  },
+  closeBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 2,
+    backgroundColor: 'rgba(230,230,230,0.9)',
+    borderRadius: 16,
+    padding: 2,
   },
   centeredContent: {
     alignItems: 'center',
@@ -79,4 +87,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GlobalConnectionModal; 
+export default GlobalConnectionModal;

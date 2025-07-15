@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import ErrorModal from '../components/ui/ErrorModal';
 import SuccessModal from '../components/ui/SuccessModal';
-import WarningModal from '../components/ui/WarningModal';
 import { useConnection } from '../contexts/ConnectionContext';
 
 interface BorradorReceta {
@@ -16,6 +16,24 @@ interface BorradorReceta {
   pasos: any[];
   fotoFinal: string | null;
 }
+
+// ---- NUEVO: subir imagen a Cloudinary ----
+const uploadImageToCloudinary = async (uri: string): Promise<string> => {
+  const formData = new FormData();
+  const filename = uri.split('/').pop() || 'image.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const ext = match ? match[1] : 'jpg';
+  const type = `image/${ext}`;
+  formData.append('file', { uri, name: filename, type } as any);
+  formData.append('upload_preset', 'ml_default');
+  const res = await fetch('https://api.cloudinary.com/v1_1/drvtr4kxz/image/upload', {
+    method: 'POST',
+    body: formData,
+  });
+  const result = await res.json();
+  if (!result.secure_url) throw new Error('No se pudo subir la imagen');
+  return result.secure_url;
+};
 
 export default function BorradoresScreen() {
   const [borradores, setBorradores] = useState<BorradorReceta[]>([]);
@@ -57,35 +75,59 @@ export default function BorradoresScreen() {
     await AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(nuevos));
   };
 
+  // -------- PUBLICAR RECETA DE BORRADOR (ahora igual que el wizard) -------
   const intentarPublicar = async (receta: BorradorReceta) => {
     if (!isConnected) {
       setModalError({ visible: true, mensaje: 'Necesitás conexión a internet para publicar la receta.' });
       return;
     }
+    setPublicando(receta.titulo);
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const formData = new FormData();
-      formData.append('title', receta.titulo);
-      formData.append('description', receta.descripcion);
-      formData.append('category', receta.categoria);
-      formData.append('portions', receta.porciones);
-      formData.append('ingredients', JSON.stringify(receta.ingredientes));
-      formData.append('stepsList', JSON.stringify(receta.pasos));
-      formData.append('aditionalMedia', JSON.stringify([]));
-      formData.append('isVerified', 'false');
-      if (receta.fotoFinal) {
-        formData.append('image', {
-          uri: receta.fotoFinal,
-          type: 'image/jpeg',
-          name: `foto_${Date.now()}.jpg`,
-        } as any);
+
+      // 1. Subir foto final si es local (startsWith file)
+      let imageUrl = null;
+      if (receta.fotoFinal && receta.fotoFinal.startsWith('file')) {
+        imageUrl = await uploadImageToCloudinary(receta.fotoFinal);
+      } else {
+        imageUrl = receta.fotoFinal || null;
       }
+
+      // 2. Subir imágenes de pasos si son locales
+      const pasosConImagenes = await Promise.all(
+        (receta.pasos || []).map(async (p) => {
+          let url = p.media;
+          if (p.media && typeof p.media === 'string' && p.media.startsWith('file')) {
+            url = await uploadImageToCloudinary(p.media);
+          }
+          return {
+            ...p,
+            urls: url ? [url] : [],
+            media: undefined, // limpia media para no mandar local
+          };
+        })
+      );
+
+      // 3. Preparar body igual que el flujo normal
+      const body = {
+        title: receta.titulo,
+        description: receta.descripcion,
+        category: receta.categoria,
+        portions: receta.porciones,
+        ingredients: receta.ingredientes,
+        stepsList: pasosConImagenes,
+        aditionalMedia: [],
+        image_url: imageUrl,
+        isVerificated: false,
+      };
+
       const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Error al enviar la receta');
       await eliminarBorrador(receta.titulo);
@@ -134,7 +176,7 @@ export default function BorradoresScreen() {
           ))}
         </ScrollView>
       )}
-      <WarningModal
+      <ErrorModal
         visible={modalError.visible}
         onClose={() => setModalError({ visible: false, mensaje: '' })}
         title="Error"
@@ -223,4 +265,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-}); 
+});

@@ -1,3 +1,4 @@
+import ErrorModal from '@/components/ui/ErrorModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -98,6 +99,7 @@ export default function CargarRecetaWizard() {
   // Modales visuales
   const [modalExito, setModalExito] = useState(false);
   const [modalError, setModalError] = useState({ visible: false, mensaje: '' });
+  const [modalWarning, setModalWarning] = useState({ visible: false, mensaje: '' });
   const [successDraft, setSuccessDraft] = useState(false);
 
   // Campos receta
@@ -455,6 +457,7 @@ const modificarReceta = async () => {
       return;
     }
     if (!isConnected) {
+      setModalWarning({ visible: true, mensaje: 'No hay conexión a internet. Receta guardada como borrador.' });
       if (!userAlias) return;
       const receta = {
         titulo,
@@ -576,11 +579,18 @@ const modificarReceta = async () => {
           title="¡Éxito!"
           message="Receta cargada. Queda pendiente de aprobación."
         />
-        <WarningModal
+        <ErrorModal
           visible={modalError.visible}
           onClose={() => setModalError({ visible: false, mensaje: '' })}
           title="Error"
           message={modalError.mensaje}
+        />
+
+        <WarningModal
+          visible={modalWarning.visible}
+          onClose={() => setModalWarning({ visible: false, mensaje: '' })}
+          title="Atención"
+          message={modalWarning.mensaje}
         />
       </KeyboardAvoidingView>
     );
