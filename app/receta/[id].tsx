@@ -522,7 +522,7 @@ export default function RecipePage() {
             style={{ marginLeft: 2 }}
           />
           <View style={styles.favoriteRow}>
-            {userRole !== 'guest' && (
+            {userRole !== 'guest' && recipe.isVerificated && (
               <TouchableOpacity
                 style={styles.favoriteBtn}
                 onPress={handleFavorite}
@@ -562,7 +562,7 @@ export default function RecipePage() {
         <Text style={styles.category}>
           {recipe.category}
         </Text>
-        {!isPersonalized && (
+        {recipe.isVerificated && !isPersonalized && (
           <TouchableOpacity
             style={styles.editBtn}
             onPress={() => setEditModalVisible(true)}
@@ -583,7 +583,7 @@ export default function RecipePage() {
         <Text style={styles.portionText}>
           {portions} porcion{portions > 1 ? 'es' : ''}
         </Text>
-        {!isPersonalized && (
+        {recipe.isVerificated && !isPersonalized && (
           <>
             <TouchableOpacity
               style={styles.portionBtn}
@@ -614,7 +614,10 @@ export default function RecipePage() {
             key={idx}
             style={styles.ingredientText}
           >
-            {ing.quantity} {ing.unit} {ing.name}
+            {Number(ing.quantity) % 1 === 0
+              ? ing.quantity
+              : Number(ing.quantity).toFixed(2)
+            } {ing.unit} {ing.name}
           </Text>
         ))}
       </View>
@@ -656,6 +659,7 @@ export default function RecipePage() {
         ))}
 
       {/* Button to open rating modal */}
+      {recipe.isVerificated && (
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8, justifyContent: 'flex-start', paddingHorizontal: 16 }}>
         <TouchableOpacity
           style={[styles.favoriteBtn, { backgroundColor: '#E8F5E8', marginRight: 8 }]}
@@ -671,6 +675,8 @@ export default function RecipePage() {
           <Text style={{ color: '#025E45', marginLeft: 4 }}>Evaluar receta</Text>
         </TouchableOpacity>
       </View>
+      )}
+
 
       {/* Verified comments */}
       <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Comentarios</Text>
