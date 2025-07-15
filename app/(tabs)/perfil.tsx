@@ -3,7 +3,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // ícono
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface UserInfo {
   _id: string;
@@ -15,6 +15,7 @@ interface UserInfo {
 export default function PerfilScreen() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const loadUserInfo = async () => {
@@ -105,13 +106,46 @@ export default function PerfilScreen() {
         <View style={styles.divider} />
 
         {/* Opción 3: Cerrar sesión */}
-          <TouchableOpacity style={styles.optionRow} onPress={() => router.replace('/')}>
+          <TouchableOpacity style={styles.optionRow} onPress={() => setShowLogoutModal(true)}>
           <View style={styles.optionLeft}>
             <Ionicons name="exit-outline" size={20} color="black" />
             <Text style={styles.optionText}>Cerrar sesión</Text>
           </View>
         </TouchableOpacity>
       </View>
+      {/* Modal de confirmación de logout */}
+      <Modal
+        visible={showLogoutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, alignItems: 'center', width: 300 }}>
+            <Ionicons name="alert-circle-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
+            <Text style={{ fontSize: 18, color: 'black', marginBottom: 12, textAlign: 'center' }}>
+              ¿Estás seguro que deseas cerrar sesión?
+            </Text>
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <TouchableOpacity
+                style={{ backgroundColor: '#ccc', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginRight: 12 }}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={{ color: '#333', fontWeight: 'bold' }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: '#025E45', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 }}
+                onPress={() => {
+                  setShowLogoutModal(false);
+                  router.replace('/');
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Cerrar sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
     </ProtectedPage>
   );
