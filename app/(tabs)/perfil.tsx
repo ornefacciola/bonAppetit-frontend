@@ -122,7 +122,7 @@ export default function PerfilScreen() {
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, alignItems: 'center', width: 300 }}>
-            <Ionicons name="alert-circle-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
+            <Ionicons name="log-out-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
             <Text style={{ fontSize: 18, color: 'black', marginBottom: 12, textAlign: 'center' }}>
               ¿Estás seguro que deseas cerrar sesión?
             </Text>
