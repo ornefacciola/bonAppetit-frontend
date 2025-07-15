@@ -41,6 +41,15 @@ export default function CargarRecetaModal() {
   ]);
   const [pasos, setPasos] = useState<Paso[]>([{ descripcion: '' }]);
 
+  // Estados de error para validación
+  const [errores, setErrores] = useState({
+    titulo: false,
+    categoria: false,
+    porciones: false,
+    ingredientes: [] as boolean[], // uno por ingrediente
+    pasos: [] as boolean[], // uno por paso
+  });
+
   const agregarIngrediente = () => {
     setIngredientes([...ingredientes, { nombre: '', cantidad: '', unidad: '' }]);
   };
@@ -65,6 +74,26 @@ export default function CargarRecetaModal() {
     setPasos(nuevos);
   };
 
+  // Validación al enviar
+  const validarCampos = () => {
+    const err = {
+      titulo: !titulo.trim(),
+      categoria: !categoria,
+      porciones: !porciones.trim(),
+      ingredientes: ingredientes.map(ing => !ing.nombre || !ing.cantidad || !ing.unidad),
+      pasos: pasos.map(p => !p.descripcion.trim()),
+    };
+    setErrores(err);
+    // Si hay algún error, retorna false
+    return !(
+      err.titulo ||
+      err.categoria ||
+      err.porciones ||
+      err.ingredientes.some(Boolean) ||
+      err.pasos.some(Boolean)
+    );
+  };
+
   return (
     <ProtectedPage pageName="cargar-receta">
       <View style={styles.overlay}>
@@ -74,16 +103,21 @@ export default function CargarRecetaModal() {
               <Text style={styles.closeText}>×</Text>
             </TouchableOpacity>
 
-            <Text style={styles.label}>Título de receta</Text>
+            <Text style={styles.label}>
+              Título de receta <Text style={{ color: 'red' }}>*</Text>
+            </Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errores.titulo && { borderColor: 'red' }]}
               value={titulo}
               onChangeText={setTitulo}
               placeholder="Ej: Milanesas de pollo"
             />
+            {errores.titulo && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
-            <Text style={styles.label}>Categoría</Text>
-            <View style={styles.pickerWrapper}>
+            <Text style={styles.label}>
+              Categoría <Text style={{ color: 'red' }}>*</Text>
+            </Text>
+            <View style={[styles.pickerWrapper, errores.categoria && { borderColor: 'red', borderWidth: 1 }]}>
               <Picker
                 selectedValue={categoria}
                 onValueChange={setCategoria}
@@ -95,20 +129,26 @@ export default function CargarRecetaModal() {
                 ))}
               </Picker>
             </View>
+            {errores.categoria && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
-            <Text style={styles.label}>Cantidad de porciones</Text>
+            <Text style={styles.label}>
+              Cantidad de porciones <Text style={{ color: 'red' }}>*</Text>
+            </Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errores.porciones && { borderColor: 'red' }]}
               value={porciones}
               onChangeText={setPorciones}
               placeholder="Ej: 4"
               keyboardType="numeric"
             />
+            {errores.porciones && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
-            <Text style={styles.label}>Ingredientes</Text>
+            <Text style={styles.label}>
+              Ingredientes <Text style={{ color: 'red' }}>*</Text>
+            </Text>
             {ingredientes.map((ing, i) => (
               <View key={i} style={styles.ingredienteContainer}>
-                <View style={styles.pickerWrapper}>
+                <View style={[styles.pickerWrapper, errores.ingredientes[i] && { borderColor: 'red', borderWidth: 1 }]}>
                   <Picker
                     selectedValue={ing.nombre}
                     onValueChange={(text) => actualizarIngrediente(i, 'nombre', text)}
@@ -121,34 +161,39 @@ export default function CargarRecetaModal() {
                   </Picker>
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errores.ingredientes[i] && { borderColor: 'red' }]}
                   placeholder="Cantidad"
                   keyboardType="numeric"
                   value={ing.cantidad}
                   onChangeText={(text) => actualizarIngrediente(i, 'cantidad', text)}
                 />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errores.ingredientes[i] && { borderColor: 'red' }]}
                   placeholder="Unidad"
                   value={ing.unidad}
                   onChangeText={(text) => actualizarIngrediente(i, 'unidad', text)}
                 />
+                {errores.ingredientes[i] && <Text style={styles.errorText}>Completa todos los campos</Text>}
               </View>
             ))}
             <TouchableOpacity onPress={agregarIngrediente} style={styles.secondaryButton}>
               <Text>➕ Añadir ingrediente</Text>
             </TouchableOpacity>
 
-            <Text style={styles.label}>Descripción de la receta</Text>
+            <Text style={styles.label}>
+              Descripción de la receta <Text style={{ color: 'red' }}>*</Text>
+            </Text>
             {pasos.map((paso, i) => (
-              <TextInput
-                key={i}
-                style={styles.input}
-                placeholder={`Paso ${i + 1}`}
-                value={paso.descripcion}
-                onChangeText={(text) => actualizarPaso(i, text)}
-                multiline
-              />
+              <View key={i}>
+                <TextInput
+                  style={[styles.input, errores.pasos[i] && { borderColor: 'red' }]}
+                  placeholder={`Paso ${i + 1}`}
+                  value={paso.descripcion}
+                  onChangeText={(text) => actualizarPaso(i, text)}
+                  multiline
+                />
+                {errores.pasos[i] && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
+              </View>
             ))}
             <TouchableOpacity onPress={agregarPaso} style={styles.secondaryButton}>
               <Text>➕ Añadir paso</Text>
@@ -159,7 +204,10 @@ export default function CargarRecetaModal() {
               <Text>📷 Subir foto</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.submitButton}>
+            <TouchableOpacity style={styles.submitButton} onPress={() => {
+              if (!validarCampos()) return;
+              // ... lógica de envío ...
+            }}>
               <Text style={styles.submitText}>Cargar Receta</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -237,5 +285,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 2,
+    marginLeft: 2,
   },
 });

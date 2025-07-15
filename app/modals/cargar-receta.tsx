@@ -487,6 +487,40 @@ const modificarReceta = async () => {
 
   // ----------- UI -----------
 
+  // Estados de error para validación
+  const [errores, setErrores] = useState({
+    titulo: false,
+    descripcion: false, // ya no se usa como requerido
+    categoria: false,
+    porciones: false,
+    ingredientes: [] as boolean[], // uno por ingrediente
+    pasos: [] as boolean[], // uno por paso
+  });
+
+  // Validación al enviar
+  const validarCampos = () => {
+    const err = {
+      titulo: !titulo.trim(),
+      descripcion: false, // descripcion no es requerida
+      categoria: !categoria.trim(),
+      porciones: !porciones.trim(),
+      ingredientes: ingredientes.map(ing => {
+        if (!ing.nombre) return false; // Si no hay nombre, no es requerido
+        return !ing.cantidad || !ing.unidad;
+      }),
+      pasos: pasos.map(p => !p.descripcion.trim()),
+    };
+    setErrores(err);
+    // Si hay algún error, retorna false
+    return !(
+      err.titulo ||
+      err.categoria ||
+      err.porciones ||
+      err.ingredientes.some(Boolean) ||
+      err.pasos.some(Boolean)
+    );
+  };
+
   if (step === 'titulo') {
     return (
       <KeyboardAvoidingView
@@ -604,14 +638,19 @@ const modificarReceta = async () => {
       <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
         <Text style={styles.closeText}>×</Text>
       </TouchableOpacity>
-      <Text style={styles.label}>Título de receta</Text>
+      <Text style={styles.label}>
+        Título de receta <Text style={{ color: 'red' }}>*</Text>
+      </Text>
       <TextInput
-        style={[styles.input, { backgroundColor: '#F0F0F0', color: '#888' }]}
+        style={[styles.input, { backgroundColor: '#F0F0F0', color: '#888' }, errores.titulo && { borderColor: 'red' }]}
         value={titulo}
         editable={false}
       />
+      {errores.titulo && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
-      <Text style={styles.label}>Descripción general</Text>
+      <Text style={styles.label}>
+        Descripción general
+      </Text>
       <TextInput
         style={styles.textarea}
         value={descripcion}
@@ -619,31 +658,40 @@ const modificarReceta = async () => {
         placeholder="Ej: Masa crocante, salsa de tomate y queso derretido..."
         multiline
       />
+      {/* No error para descripción */}
 
       {/* ----------- Picker de Categoría ----------- */}
-      <Text style={styles.label}>Categoría</Text>
-      <TouchableOpacity style={styles.input} onPress={() => setCategoriaModal(true)}>
+      <Text style={styles.label}>
+        Categoría <Text style={{ color: 'red' }}>*</Text>
+      </Text>
+      <TouchableOpacity style={[styles.input, errores.categoria && { borderColor: 'red' }]} onPress={() => setCategoriaModal(true)}>
         <Text style={{ color: categoria ? '#222' : '#999' }}>
           {categoria ? categoria : 'Seleccionar categoría...'}
         </Text>
       </TouchableOpacity>
+      {errores.categoria && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
       {/* ----------- Porciones ----------- */}
-      <Text style={styles.label}>Porciones</Text>
+      <Text style={styles.label}>
+        Porciones <Text style={{ color: 'red' }}>*</Text>
+      </Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, errores.porciones && { borderColor: 'red' }]}
         value={porciones}
         onChangeText={setPorciones}
         placeholder="Ej: 4"
         keyboardType="numeric"
       />
+      {errores.porciones && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
       {/* ----------- Ingredientes ----------- */}
-      <Text style={styles.label}>Ingredientes</Text>
+      <Text style={styles.label}>
+        Ingredientes <Text style={{ color: 'red' }}>*</Text>
+      </Text>
       {ingredientes.map((item, index) => (
         <View key={index} style={{ marginBottom: 8 }}>
           <TouchableOpacity
-            style={[styles.input, { marginBottom: 6 }]}
+            style={[styles.input, { marginBottom: 6 }, errores.ingredientes[index] && { borderColor: 'red' }]}
             onPress={() => setIngredienteModalIndex(index)}
           >
             <Text style={{ color: item.nombre ? '#222' : '#999' }}>
@@ -652,7 +700,7 @@ const modificarReceta = async () => {
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TextInput
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.input, { flex: 1 }, errores.ingredientes[index] && { borderColor: 'red' }]}
               placeholder="Cantidad"
               value={item.cantidad}
               onChangeText={text => {
@@ -663,7 +711,7 @@ const modificarReceta = async () => {
               keyboardType="numeric"
             />
             <TextInput
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.input, { flex: 1 }, errores.ingredientes[index] && { borderColor: 'red' }]}
               placeholder="Unidad"
               value={item.unidad}
               onChangeText={text => {
@@ -673,6 +721,8 @@ const modificarReceta = async () => {
               }}
             />
           </View>
+          {/* Solo mostrar error si hay nombre y falta cantidad o unidad */}
+          {item.nombre && errores.ingredientes[index] && <Text style={styles.errorText}>Completa cantidad y unidad</Text>}
           {index > 0 && (
             <TouchableOpacity
               onPress={() => setIngredientes(ingredientes.filter((_, i) => i !== index))}
@@ -693,11 +743,13 @@ const modificarReceta = async () => {
       </TouchableOpacity>
 
       {/* ----------- Pasos ----------- */}
-      <Text style={styles.label}>Pasos</Text>
+      <Text style={styles.label}>
+        Pasos <Text style={{ color: 'red' }}>*</Text>
+      </Text>
       {pasos.map((paso, index) => (
         <View key={index} style={{ marginBottom: 8 }}>
           <TextInput
-            style={styles.textarea}
+            style={[styles.textarea, errores.pasos[index] && { borderColor: 'red' }]}
             placeholder={`Paso ${index + 1}`}
             value={paso.descripcion}
             onChangeText={text => {
@@ -707,7 +759,7 @@ const modificarReceta = async () => {
             }}
             multiline
           />
-
+          {errores.pasos[index] && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
           {/* FOTO POR PASO */}
           <TouchableOpacity
             style={styles.addButton}
@@ -830,7 +882,10 @@ const modificarReceta = async () => {
       {/* Botón de envío */}
       <TouchableOpacity
         style={styles.button}
-        onPress={handleCargarReceta}
+        onPress={() => {
+          if (!validarCampos()) return;
+          handleCargarReceta();
+        }}
         disabled={loading}
       >
         {loading ? (
@@ -1098,4 +1153,10 @@ const styles = StyleSheet.create({
   searchInput: { borderWidth: 1, borderColor: '#CCC', borderRadius: 8, paddingHorizontal: 12, height: 48, marginBottom: 12 },
   modalItem: { paddingVertical: 14, borderBottomColor: '#EEE', borderBottomWidth: 1 },
   modalItemText: { fontSize: 16 },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 2,
+    marginLeft: 2,
+  },
 });
