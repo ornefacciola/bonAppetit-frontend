@@ -177,7 +177,7 @@ export default function FavoritosScreen() {
         <AppLogo width={150} height={72} marginBottom={24} />
       </Pressable>
       <Text style={styles.title}>Mis favoritos</Text>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 50 }]}>
         {favorites.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="heart-outline" size={48} color="#ccc" />
