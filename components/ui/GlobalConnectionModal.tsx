@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { useConnection } from '../../contexts/ConnectionContext';
 
 const GlobalConnectionModal: React.FC = () => {
@@ -15,9 +15,6 @@ const GlobalConnectionModal: React.FC = () => {
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          <TouchableOpacity style={styles.closeBtn} onPress={() => setVisible(false)}>
-            <MaterialCommunityIcons name="close" size={28} color="#222" />
-          </TouchableOpacity>
           <View style={styles.centeredContent}>
             <MaterialCommunityIcons name="wifi-off" size={64} color="#222" style={styles.icon} />
             <Text style={styles.title}>No hay conexión a Internet</Text>
