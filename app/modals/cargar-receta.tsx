@@ -92,6 +92,18 @@ const uploadImageToCloudinary = async (uri: string): Promise<string> => {
 
 type Step = 'titulo' | 'conflicto' | 'formulario';
 
+// Agregar interfaz para los borradores si no existe
+interface BorradorReceta {
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  porciones: string;
+  ingredientes: any[];
+  pasos: any[];
+  fotoFinal: string | null;
+  recetaId?: string;
+}
+
 export default function CargarRecetaWizard() {
   const params = useLocalSearchParams();
   const [step, setStep] = useState<Step>('titulo');
@@ -475,10 +487,17 @@ const modificarReceta = async () => {
         ingredientes,
         pasos,
         fotoFinal,
+        ...(recetaId ? { recetaId } : {}), // Guardar recetaId si existe
       };
       AsyncStorage.getItem(`pendingRecipes_${userAlias}`).then(data => {
-        const borradores = data ? JSON.parse(data) : [];
-        borradores.push(receta);
+        let borradores: BorradorReceta[] = data ? JSON.parse(data) : [];
+        // Reemplazar si existe por recetaId o título
+        const idx = borradores.findIndex((b: BorradorReceta) => (receta.recetaId && b.recetaId === receta.recetaId) || (!receta.recetaId && b.titulo === receta.titulo));
+        if (idx !== -1) {
+          borradores[idx] = receta;
+        } else {
+          borradores.push(receta);
+        }
         AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores)).then(() => {
           setSuccessDraft(true);
         });
@@ -1022,8 +1041,14 @@ const modificarReceta = async () => {
             ...(recetaId ? { recetaId } : {}), // Guardar recetaId si existe
           };
           const data = await AsyncStorage.getItem(`pendingRecipes_${userAlias}`);
-          const borradores = data ? JSON.parse(data) : [];
-          borradores.push(receta);
+          let borradores: BorradorReceta[] = data ? JSON.parse(data) : [];
+          // Reemplazar si existe por recetaId o título
+          const idx = borradores.findIndex((b: BorradorReceta) => (receta.recetaId && b.recetaId === receta.recetaId) || (!receta.recetaId && b.titulo === receta.titulo));
+          if (idx !== -1) {
+            borradores[idx] = receta;
+          } else {
+            borradores.push(receta);
+          }
           await AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores));
           setSuccessDraft(true);
         }}
