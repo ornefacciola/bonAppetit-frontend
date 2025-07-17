@@ -8,6 +8,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Text
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
 import { AppLogo } from '@/components/ui/AppLogo';
+import GlobalConnectionModal from '@/components/ui/GlobalConnectionModal';
 import SuccessModal from '@/components/ui/SuccessModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -483,354 +484,357 @@ export default function RecipePage() {
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: '#F6F6F6' }}
-      contentContainerStyle={{ paddingBottom: 100 }}
-    >
-      {/* Header with centered logo */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={28} color="#025E45" />
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-          <Pressable onPress={() => router.push('/(tabs)/home')}>
-            <AppLogo width={150} height={41} style={{ alignSelf: 'center' }} />
-          </Pressable>
-        </View>
-        <View style={{ width: 28 }} />
-      </View>
-
-      {/* Title, author, rating */}
-      <View style={styles.topSection}>
-        <Text style={[styles.recipeTitle, { fontSize: 24, fontWeight: 'bold', color: '#055B49' }]}>
-          {recipe.title}
-        </Text>
-        <View style={styles.rowCenter}>
-          <Text style={styles.author}>
-            @{recipe.user}
-          </Text>
-          <Text style={styles.rating}>
-            {Number(recipe.averageRating || 0).toFixed(1)}
-          </Text>
-          <Ionicons
-            name="star"
-            size={18}
-            color="#FFD700"
-            style={{ marginLeft: 2 }}
-          />
-          <View style={styles.favoriteRow}>
-            {userRole !== 'guest' && recipe.isVerificated && (
-              <TouchableOpacity
-                style={styles.favoriteBtn}
-                onPress={handleFavorite}
-              >
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={isFavorite ? '#FF6347' : '#888'} />
-              </TouchableOpacity>
-            )}
-            {isCustomFavorite && (
-              <View style={styles.customizedTagRight}>
-                <Ionicons name="construct" size={16} color="#025E45" />
-                <Text style={styles.customizedText}>Modificado a tu gusto</Text>
-              </View>
-            )}
-          </View>
-        </View>
-        <Text style={{ fontSize: 16, }}>
-            {recipe.description}
-          </Text>
-      </View>
-      {/* Main image */}
-      {recipe.image_url ? (
-        <Image
-          source={{ uri: recipe.image_url }}
-          style={styles.mainImage}
-          contentFit="cover"
-        />
-      ) : (
-        <Text
-          style={{ textAlign: 'center', color: '#999', marginVertical: 16 }}
-        >
-          No image available
-        </Text>
-      )}
-
-      {/* Category, favorite, portions */}
-      <View style={styles.infoRow}>
-        <Text style={styles.category}>
-          {recipe.category}
-        </Text>
-        {recipe.isVerificated && !isPersonalized && (
+    <>
+      <ScrollView
+        style={{ backgroundColor: '#F6F6F6' }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* Header with centered logo */}
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => setEditModalVisible(true)}
+            onPress={handleBack}
+            style={styles.backButton}
           >
-            <Ionicons name="pencil" size={18} color="#888" />
+            <Ionicons name="arrow-back" size={28} color="#025E45" />
+          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <Pressable onPress={() => router.push('/(tabs)/home')}>
+              <AppLogo width={150} height={41} style={{ alignSelf: 'center' }} />
+            </Pressable>
+          </View>
+          <View style={{ width: 28 }} />
+        </View>
+
+        {/* Title, author, rating */}
+        <View style={styles.topSection}>
+          <Text style={[styles.recipeTitle, { fontSize: 24, fontWeight: 'bold', color: '#055B49' }]}>
+            {recipe.title}
+          </Text>
+          <View style={styles.rowCenter}>
+            <Text style={styles.author}>
+              @{recipe.user}
+            </Text>
+            <Text style={styles.rating}>
+              {Number(recipe.averageRating || 0).toFixed(1)}
+            </Text>
+            <Ionicons
+              name="star"
+              size={18}
+              color="#FFD700"
+              style={{ marginLeft: 2 }}
+            />
+            <View style={styles.favoriteRow}>
+              {userRole !== 'guest' && recipe.isVerificated && (
+                <TouchableOpacity
+                  style={styles.favoriteBtn}
+                  onPress={handleFavorite}
+                >
+                  <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={isFavorite ? '#FF6347' : '#888'} />
+                </TouchableOpacity>
+              )}
+              {isCustomFavorite && (
+                <View style={styles.customizedTagRight}>
+                  <Ionicons name="construct" size={16} color="#025E45" />
+                  <Text style={styles.customizedText}>Modificado a tu gusto</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <Text style={{ fontSize: 16, }}>
+              {recipe.description}
+            </Text>
+        </View>
+        {/* Main image */}
+        {recipe.image_url ? (
+          <Image
+            source={{ uri: recipe.image_url }}
+            style={styles.mainImage}
+            contentFit="cover"
+          />
+        ) : (
+          <Text
+            style={{ textAlign: 'center', color: '#999', marginVertical: 16 }}
+          >
+            No image available
+          </Text>
+        )}
+
+        {/* Category, favorite, portions */}
+        <View style={styles.infoRow}>
+          <Text style={styles.category}>
+            {recipe.category}
+          </Text>
+          {recipe.isVerificated && !isPersonalized && (
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={() => setEditModalVisible(true)}
+            >
+              <Ionicons name="pencil" size={18} color="#888" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Ingredients */}
+        <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Ingredientes</Text>
+        <View style={styles.portionRow}>
+          <Ionicons
+            name="people-outline"
+            size={18}
+            color="#666"
+          />
+          <Text style={styles.portionText}>
+            {portions} porcion{portions > 1 ? 'es' : ''}
+          </Text>
+          {recipe.isVerificated && !isPersonalized && (
+            <>
+              <TouchableOpacity
+                style={styles.portionBtn}
+                onPress={() => handlePortionChange(-1)}
+              >
+                <Ionicons
+                  name="remove-circle-outline"
+                  size={22}
+                  color="#025E45"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.portionBtn}
+                onPress={() => handlePortionChange(1)}
+              >
+                <Ionicons
+                  name="add-circle-outline"
+                  size={22}
+                  color="#025E45"
+                />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+        <View style={styles.ingredientBox}>
+          {adjustedIngredients.map((ing, idx) => (
+            <Text
+              key={idx}
+              style={styles.ingredientText}
+            >
+              {Number(ing.quantity) % 1 === 0
+                ? ing.quantity
+                : Number(ing.quantity).toFixed(2)
+              } {ing.unit} {ing.name}
+            </Text>
+          ))}
+        </View>
+
+        {/* Botón guardar favorito personalizado */}
+        {hasCustom && (
+          <TouchableOpacity
+            style={[styles.saveCustomBtn, userRole === 'guest' && { backgroundColor: '#ccc' }]}
+            onPress={userRole === 'guest' ? undefined : handleSaveCustomFavorite}
+            disabled={userRole === 'guest'}
+          >
+            <Ionicons name="heart" size={18} color="#fff" />
+            <Text style={styles.saveCustomBtnText}>
+              Guardar en favoritos "A tu gusto"
+            </Text>
           </TouchableOpacity>
         )}
-      </View>
 
-      {/* Ingredients */}
-      <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Ingredientes</Text>
-      <View style={styles.portionRow}>
-        <Ionicons
-          name="people-outline"
-          size={18}
-          color="#666"
+        <SuccessModal
+          visible={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          title="¡Bien hecho!"
+          message="Tu receta fue modificada a tu gusto y la podés ver en tus favoritos."
         />
-        <Text style={styles.portionText}>
-          {portions} porcion{portions > 1 ? 'es' : ''}
-        </Text>
-        {recipe.isVerificated && !isPersonalized && (
-          <>
-            <TouchableOpacity
-              style={styles.portionBtn}
-              onPress={() => handlePortionChange(-1)}
-            >
-              <Ionicons
-                name="remove-circle-outline"
-                size={22}
-                color="#025E45"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.portionBtn}
-              onPress={() => handlePortionChange(1)}
-            >
-              <Ionicons
-                name="add-circle-outline"
-                size={22}
-                color="#025E45"
-              />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-      <View style={styles.ingredientBox}>
-        {adjustedIngredients.map((ing, idx) => (
-          <Text
-            key={idx}
-            style={styles.ingredientText}
-          >
-            {Number(ing.quantity) % 1 === 0
-              ? ing.quantity
-              : Number(ing.quantity).toFixed(2)
-            } {ing.unit} {ing.name}
-          </Text>
-        ))}
-      </View>
 
-      {/* Botón guardar favorito personalizado */}
-      {hasCustom && (
-        <TouchableOpacity
-          style={[styles.saveCustomBtn, userRole === 'guest' && { backgroundColor: '#ccc' }]}
-          onPress={userRole === 'guest' ? undefined : handleSaveCustomFavorite}
-          disabled={userRole === 'guest'}
-        >
-          <Ionicons name="heart" size={18} color="#fff" />
-          <Text style={styles.saveCustomBtnText}>
-            Guardar en favoritos "A tu gusto"
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      <SuccessModal
-        visible={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        title="¡Bien hecho!"
-        message="Tu receta fue modificada a tu gusto y la podés ver en tus favoritos."
-      />
-
-      {/* Steps */}
-      <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Paso a paso</Text>
-      {parsedSteps.length === 0
-        ? <Text style={styles.ingredientText}>No hay pasos</Text>
-        : parsedSteps.map((step, idx) => (
-          <View key={idx} style={styles.stepBox}>
-            <Text style={styles.stepText}>
-              {idx + 1}. {step.texto}
-              </Text>
-            {step.urls?.length
-              ? <Image source={{ uri: step.urls[0] }} style={styles.stepImage} contentFit="cover" />
-              : null}
-          </View>
-        ))}
-
-      {/* Button to open rating modal */}
-      {recipe.isVerificated && (
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8, justifyContent: 'flex-start', paddingHorizontal: 16 }}>
-        <TouchableOpacity
-          style={[styles.favoriteBtn, { backgroundColor: '#E8F5E8', marginRight: 8 }]}
-          onPress={() => {
-            if (userRole === 'guest') {
-              setShowGuestModal(true);
-            } else {
-              setShowRatingModal(true);
-            }
-          }}
-        >
-          <Ionicons name="star-outline" size={20} color="#025E45" />
-          <Text style={{ color: '#025E45', marginLeft: 4 }}>Evaluar receta</Text>
-        </TouchableOpacity>
-      </View>
-      )}
-
-
-      {/* Verified comments */}
-      <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Comentarios</Text>
-      {verifiedComments.length ? (
-        verifiedComments.map((rating, idx) => (
-          <View
-            key={rating.id ?? idx}
-            style={styles.commentBox}
-          >
-            <View style={styles.commentHeader}>
-              <Ionicons
-                name="person-circle-outline"
-                size={32}
-                color="#025E45"
-              />
-              <View style={{ marginLeft: 8, flex: 1 }}>
-                <Text style={styles.commentUser}>
-                  @{rating.user} - {formatDate(rating.createdAt)}
+        {/* Steps */}
+        <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Paso a paso</Text>
+        {parsedSteps.length === 0
+          ? <Text style={styles.ingredientText}>No hay pasos</Text>
+          : parsedSteps.map((step, idx) => (
+            <View key={idx} style={styles.stepBox}>
+              <Text style={styles.stepText}>
+                {idx + 1}. {step.texto}
                 </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center'
-                  }}
-                >
-                  <Ionicons
-                    name="star"
-                    size={16}
-                    color="#FFD700"
-                  />
-                  <Text
-                    style={styles.commentRating}
-                  >
-                    {rating.rate}
+              {step.urls?.length
+                ? <Image source={{ uri: step.urls[0] }} style={styles.stepImage} contentFit="cover" />
+                : null}
+            </View>
+          ))}
+
+        {/* Button to open rating modal */}
+        {recipe.isVerificated && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8, justifyContent: 'flex-start', paddingHorizontal: 16 }}>
+          <TouchableOpacity
+            style={[styles.favoriteBtn, { backgroundColor: '#E8F5E8', marginRight: 8 }]}
+            onPress={() => {
+              if (userRole === 'guest') {
+                setShowGuestModal(true);
+              } else {
+                setShowRatingModal(true);
+              }
+            }}
+          >
+            <Ionicons name="star-outline" size={20} color="#025E45" />
+            <Text style={{ color: '#025E45', marginLeft: 4 }}>Evaluar receta</Text>
+          </TouchableOpacity>
+        </View>
+        )}
+
+
+        {/* Verified comments */}
+        <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Comentarios</Text>
+        {verifiedComments.length ? (
+          verifiedComments.map((rating, idx) => (
+            <View
+              key={rating.id ?? idx}
+              style={styles.commentBox}
+            >
+              <View style={styles.commentHeader}>
+                <Ionicons
+                  name="person-circle-outline"
+                  size={32}
+                  color="#025E45"
+                />
+                <View style={{ marginLeft: 8, flex: 1 }}>
+                  <Text style={styles.commentUser}>
+                    @{rating.user} - {formatDate(rating.createdAt)}
                   </Text>
-                  <View style={styles.verifiedBadge}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center'
+                    }}
+                  >
                     <Ionicons
-                      name="checkmark-circle"
-                      size={14}
-                      color="#4CAF50"
+                      name="star"
+                      size={16}
+                      color="#FFD700"
                     />
                     <Text
-                      style={styles.verifiedText}
+                      style={styles.commentRating}
                     >
-                      Verificado
+                      {rating.rate}
                     </Text>
+                    <View style={styles.verifiedBadge}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color="#4CAF50"
+                      />
+                      <Text
+                        style={styles.verifiedText}
+                      >
+                        Verificado
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </View>
+              <Text style={styles.commentText}>
+                {rating.comment}
+              </Text>
             </View>
-            <Text style={styles.commentText}>
-              {rating.comment}
-            </Text>
-          </View>
-        ))
-      ) : (
-        <View style={styles.noCommentsBox}>
-          <Ionicons
-            name="chatbubble-outline"
-            size={48}
-            color="#ccc"
-          />
-          <Text style={styles.noCommentsText}>
-            No hay comentarios aún
-          </Text>
-        </View>
-      )}
-
-      <RecipeRatingModal
-        visible={showRatingModal}
-        onClose={() => setShowRatingModal(false)}
-        recipeTitle={recipe.title}
-        onSubmit={handleSubmitRating}
-      />
-
-      {/* Modal para editar ingrediente */}
-      <Modal
-        visible={editModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16 }}>Editar ingrediente</Text>
-            <Text style={{ marginBottom: 8 }}>Ingrediente</Text>
-            <View style={styles.dropdownBox}>
-              {recipe?.ingredients.map((ing, idx) => (
-                <Pressable
-                  key={idx}
-                  style={[styles.dropdownItem, selectedIngredientIdx === idx && { backgroundColor: '#e0e0e0' }]}
-                  onPress={() => setSelectedIngredientIdx(idx)}
-                >
-                  <Text>{ing.name}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={{ marginTop: 12 }}>Cantidad</Text>
-            <TextInput
-              style={styles.input}
-              value={editQuantity}
-              onChangeText={setEditQuantity}
-              placeholder="Cantidad"
-              keyboardType="numeric"
+          ))
+        ) : (
+          <View style={styles.noCommentsBox}>
+            <Ionicons
+              name="chatbubble-outline"
+              size={48}
+              color="#ccc"
             />
-            <Text style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
-              Ingresá la nueva cantidad del ingrediente seleccionado.
+            <Text style={styles.noCommentsText}>
+              No hay comentarios aún
             </Text>
-            <View style={{ flexDirection: 'row', marginTop: 20, justifyContent: 'space-between' }}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModalVisible(false)}>
-                <Text style={{ color: '#fff' }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleEditIngredient}>
-                <Text style={{ color: '#fff' }}>Actualizar receta</Text>
-              </TouchableOpacity>
-            </View>
           </View>
-        </View>
-      </Modal>
+        )}
 
-      {/* Modal para guest */}
-      <Modal
-        visible={showGuestModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowGuestModal(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, alignItems: 'center', width: 300 }}>
-            <Ionicons name="lock-closed-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
-            <Text style={{ fontSize: 18, color: 'black', marginBottom: 12, textAlign: 'center' }}>
-              Para evaluar receta debes iniciar sesión
-            </Text>
-            <View style={{ flexDirection: 'row', marginTop: 12 }}>
-              <TouchableOpacity
-                style={{ backgroundColor: '#ccc', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginRight: 12 }}
-                onPress={() => setShowGuestModal(false)}
-              >
-                <Text style={{ color: '#333', fontWeight: 'bold' }}>Cerrar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ backgroundColor: '#025E45', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 }}
-                onPress={() => {
-                  setShowGuestModal(false);
-                  router.push('/login');
-                }}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Iniciar sesión</Text>
-              </TouchableOpacity>
+        <RecipeRatingModal
+          visible={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          recipeTitle={recipe.title}
+          onSubmit={handleSubmitRating}
+        />
+
+        {/* Modal para editar ingrediente */}
+        <Modal
+          visible={editModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16 }}>Editar ingrediente</Text>
+              <Text style={{ marginBottom: 8 }}>Ingrediente</Text>
+              <View style={styles.dropdownBox}>
+                {recipe?.ingredients.map((ing, idx) => (
+                  <Pressable
+                    key={idx}
+                    style={[styles.dropdownItem, selectedIngredientIdx === idx && { backgroundColor: '#e0e0e0' }]}
+                    onPress={() => setSelectedIngredientIdx(idx)}
+                  >
+                    <Text>{ing.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={{ marginTop: 12 }}>Cantidad</Text>
+              <TextInput
+                style={styles.input}
+                value={editQuantity}
+                onChangeText={setEditQuantity}
+                placeholder="Cantidad"
+                keyboardType="numeric"
+              />
+              <Text style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
+                Ingresá la nueva cantidad del ingrediente seleccionado.
+              </Text>
+              <View style={{ flexDirection: 'row', marginTop: 20, justifyContent: 'space-between' }}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModalVisible(false)}>
+                  <Text style={{ color: '#fff' }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleEditIngredient}>
+                  <Text style={{ color: '#fff' }}>Actualizar receta</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+
+        {/* Modal para guest */}
+        <Modal
+          visible={showGuestModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowGuestModal(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, alignItems: 'center', width: 300 }}>
+              <Ionicons name="lock-closed-outline" size={48} color="#025E45" style={{ marginBottom: 12 }} />
+              <Text style={{ fontSize: 18, color: 'black', marginBottom: 12, textAlign: 'center' }}>
+                Para evaluar receta debes iniciar sesión
+              </Text>
+              <View style={{ flexDirection: 'row', marginTop: 12 }}>
+                <TouchableOpacity
+                  style={{ backgroundColor: '#ccc', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginRight: 12 }}
+                  onPress={() => setShowGuestModal(false)}
+                >
+                  <Text style={{ color: '#333', fontWeight: 'bold' }}>Cerrar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ backgroundColor: '#025E45', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 }}
+                  onPress={() => {
+                    setShowGuestModal(false);
+                    router.push('/login');
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>Iniciar sesión</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+      <GlobalConnectionModal />
+    </>
   );
 }
 
