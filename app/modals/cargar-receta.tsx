@@ -1,7 +1,7 @@
 import ErrorModal from '@/components/ui/ErrorModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -93,6 +93,7 @@ const uploadImageToCloudinary = async (uri: string): Promise<string> => {
 type Step = 'titulo' | 'conflicto' | 'formulario';
 
 export default function CargarRecetaWizard() {
+  const params = useLocalSearchParams();
   const [step, setStep] = useState<Step>('titulo');
   const [loading, setLoading] = useState(false);
 
@@ -155,6 +156,13 @@ export default function CargarRecetaWizard() {
     };
     getUser();
   }, []);
+
+  useEffect(() => {
+    // Si viene un id por params, setearlo
+    if (params && params.id) {
+      setRecetaId(params.id as string);
+    }
+  }, [params]);
 
   useEffect(() => {
     const fetchAllCategories = async () => {
@@ -608,8 +616,14 @@ const modificarReceta = async () => {
           <TouchableOpacity
             style={[styles.conflictBtn, { marginRight: 10 }]}
             onPress={async () => {
-              await obtenerRecetaExistente();
-              setStep('formulario');
+              // Refuerzo: setear recetaId explícitamente antes de obtener datos
+              const existe = await validarTitulo(titulo);
+              if (existe && recetaId) {
+                await obtenerRecetaExistente();
+                setStep('formulario');
+              } else {
+                setModalError({ visible: true, mensaje: 'No se pudo identificar la receta existente.' });
+              }
             }}
             activeOpacity={0.9}
           >
@@ -1005,6 +1019,7 @@ const modificarReceta = async () => {
             ingredientes,
             pasos,
             fotoFinal,
+            ...(recetaId ? { recetaId } : {}), // Guardar recetaId si existe
           };
           const data = await AsyncStorage.getItem(`pendingRecipes_${userAlias}`);
           const borradores = data ? JSON.parse(data) : [];

@@ -76,7 +76,7 @@ export default function BorradoresScreen() {
   };
 
   // -------- PUBLICAR RECETA DE BORRADOR (ahora igual que el wizard) -------
-  const intentarPublicar = async (receta: BorradorReceta) => {
+  const intentarPublicar = async (receta: BorradorReceta & { recetaId?: string }) => {
     if (!isConnected) {
       setModalError({ visible: true, mensaje: 'Necesitás conexión a internet para publicar la receta.' });
       return;
@@ -121,14 +121,28 @@ export default function BorradoresScreen() {
         isVerificated: false,
       };
 
-      const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+      let res;
+      if (receta.recetaId) {
+        // Si el borrador tiene recetaId, hacer PUT
+        res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${receta.recetaId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+      } else {
+        // Si no, hacer POST
+        res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+      }
       if (!res.ok) throw new Error('Error al enviar la receta');
       await eliminarBorrador(receta.titulo);
       setModalExito(true);
