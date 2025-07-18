@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   recipeRow: {
-    marginBottom: 18,
+    marginBottom: 10,
     position: 'relative',
     width: '100%',
     alignSelf: 'stretch',

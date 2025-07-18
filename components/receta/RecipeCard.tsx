@@ -17,6 +17,7 @@ export interface RecipeCardProps {
   isFavorite: boolean;
   variant?: 'default' | 'compact';
   userRole?: string | null;
+  style?: any;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -31,6 +32,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   isFavorite,
   variant = 'default', // valor por defecto
   userRole,
+  style,
 }) => {
   const router = useRouter();
   const isCompact = variant === 'compact';
@@ -48,7 +50,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.card, isCompact && styles.cardCompact]}
+      style={[styles.card, isCompact && styles.cardCompact, style]}
       onPress={handlePress}
     >
       {imageUrl ? (
@@ -69,7 +71,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         >
           <Ionicons
             name={isFavorite ? 'heart' : 'heart-outline'}
-            size={24}
+            size={21}
             color={isFavorite ? '#FF6347' : '#FFF'}
           />
         </TouchableOpacity>
@@ -93,29 +95,30 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFF',
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginHorizontal: 7,
+    marginBottom: 9,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     overflow: 'hidden',
-    width: 280,
+    width: 250, // o '100%' si quieres que se expanda
   },
   cardCompact: {
-    width: '100%',         // ocupa todo el ancho disponible
-    alignSelf: 'stretch',  // estira la card
-    marginHorizontal: 0,   // sin margen lateral
+    width: '100%',
+    maxWidth: 385 ,
+    alignSelf: 'center',
+    marginHorizontal: 0,
   },
   image: {
     width: '100%',
-    height: 180,
+    height: 130,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
   imageCompact: {
-    height: 140, // más bajo para compacta
+    height: 95, // Usa un valor en px para evitar problemas
   },
   favoriteButton: {
     position: 'absolute',
@@ -127,16 +130,19 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   content: {
-    padding: 16,
+    padding: 17,
+    paddingBottom: 14,
+    paddingTop: 9,
   },
   titleRatingContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 1  ,
+    width: '100%',
   },
   title: {
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: '700',
     color: '#333',
     flexShrink: 1,
@@ -144,25 +150,21 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    marginLeft: 8,
+    borderRadius: 8
   },
-  rating: {
-    fontSize: 16,
+  rating: { 
+    fontSize: 12,
     fontWeight: '600',
     color: '#333',
     marginLeft: 4,
   },
   category: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
-    marginBottom: 8,
+    marginBottom: 2,
   },
   author: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
   },
   noImage: {

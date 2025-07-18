@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
     width: 118, // Adjust width as needed
-    height:140,
+    height:128,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow:'hidden',
@@ -56,15 +56,15 @@ const styles = StyleSheet.create({
     borderColor: '#222',
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 76,
+    height: 76,
     borderRadius: 40,
-    marginBottom: 8,
+    marginBottom: 2
   },
   title: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 13,
+    fontFamily:'Montserrat-Medium',
+    color: '#333', 
     textAlign: 'center',
   },
   checkmarkBox: {

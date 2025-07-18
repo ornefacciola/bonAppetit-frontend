@@ -215,19 +215,19 @@ export default function HomeScreen() {
               </View>
             ) : (
               topFavoriteRecipes.map((recipe: any) => (
-                <View key={recipe._id} style={recipe._removing ? { opacity: 0.5 } : undefined}>
-                  <RecipeCard
-                    id={recipe._id}
-                    title={recipe.title}
-                    category={recipe.category}
-                    author={recipe.user}
-                    imageUrl={recipe.image_url}
-                    rating={recipe.averageRating || 0}
-                    isFavorite={true}
-                    userRole={userRole}
-                    onToggleFavorite={() => handleRemoveFavoriteCard(recipe._id)}
-                  />
-                </View>
+                <RecipeCard
+                  key={recipe._id}
+                  id={recipe._id}
+                  title={recipe.title}
+                  category={recipe.category}
+                  author={recipe.user}
+                  imageUrl={recipe.image_url}
+                  rating={recipe.averageRating || 0}
+                  isFavorite={true}
+                  userRole={userRole}
+                  onToggleFavorite={() => handleRemoveFavoriteCard(recipe._id)}
+                  style={recipe._removing ? { opacity: 0.5 } : undefined}
+                />
               ))
             )}
           </ScrollView>
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
-    marginBottom: 32,
+    marginBottom: 19   ,
   },
   searchText: {
     flex: 1,
@@ -271,7 +271,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     color: '#025E45',
     fontSize: 16,
-    marginBottom: 10,
+    fontFamily:'Montserrat-Semibold',
+    fontWeight: '600',
+    marginBottom: 8.5,
   },
   horizontalScroll: {
     paddingBottom: 1,

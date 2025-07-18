@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
-    marginBottom: 32,
+    marginBottom: 9,
   },
   searchInput: {
     flex: 1,
