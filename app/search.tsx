@@ -2,12 +2,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
 import {
-    Pressable,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 import RecipeCard from '@/components/receta/RecipeCard';
@@ -164,12 +163,14 @@ export default function SearchScreen() {
 
     return (
         <ThemedView style={styles.container}>
-            <Pressable onPress={() => router.push('/(tabs)/home')}>
-                <AppLogo width={150} height={72} marginBottom={24} />
-            </Pressable>
-            <View style={styles.header}>
-                <Ionicons name="arrow-back" size={24} onPress={() => router.back()} />
-                <Text style={styles.title}>Buscador</Text>
+            <View style={styles.headerContainer}>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={28} color="#025E45" />
+                </TouchableOpacity>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <AppLogo width={150} height={69} style={{ marginBottom: 1 }} />
+                </View>
+                <View style={{ width: 28 }} />
             </View>
 
             {/* Search input + dropdown super pegados */}
@@ -419,5 +420,11 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
     },
+    headerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        alignSelf: 'center',
+      },
 });
 

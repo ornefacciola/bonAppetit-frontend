@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     marginRight: 12,
-    width: 118, // Adjust width as needed
-    height:128,
+    width: 113, // Adjust width as needed
+    height:113,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow:'hidden',
@@ -56,8 +56,8 @@ const styles = StyleSheet.create({
     borderColor: '#222',
   },
   image: {
-    width: 76,
-    height: 76,
+    width: 68,
+    height: 68,
     borderRadius: 40,
     marginBottom: 2
   },

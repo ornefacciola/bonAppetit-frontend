@@ -27,9 +27,7 @@ export default function Agregar() {
         <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
         <ThemedView style={[styles.container, { backgroundColor: '#F6F6F6' }]}>
           {/* Logo */}
-          <Pressable onPress={() => router.push('/(tabs)/home')}>
-            <AppLogo width={150} height={72} style={styles.logo} />
-          </Pressable>
+          <AppLogo width={150} height={69} marginBottom={8} />
 
       
           {/* Botón */}

@@ -53,7 +53,7 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Solo limitar cuando se va a agregar (no al quitar)
     if (!isFav && favoriteIds.size >= 10) {
-      setWarningMsg('Ya alcanzaste las 10 recetas favoritas.\nSi quieres agregarla, debes quitar alguna como favorita.');
+      setWarningMsg('Ya has alcanzado el límite de 10 recetas favoritas. Para agregar más, debes eliminar algunas de tus favoritas existentes.');
       setShowWarning(true);
       return; // No hace la petición al backend
     }
@@ -75,7 +75,7 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const data = await response.json();
           if (!(data.status === 'success' || data.status === 'created')) {
             console.error('Error al agregar favorito (respuesta del servidor):', data);
-            setWarningMsg('Ya alcanzaste las 10 recetas favoritas.\nSi quieres agregarla, debes quitar alguna como favorita.');
+            setWarningMsg('Ya has alcanzado el límite de 10 recetas favoritas. Para agregar más, debes eliminar algunas de tus favoritas existentes.');
             setShowWarning(true);
             return;
           }
@@ -92,7 +92,7 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else {
         const errorData = await response.json().catch(() => ({ message: 'No se pudo leer el error' }));
         console.error('Error al actualizar favorito (respuesta del servidor):', errorData);
-        setWarningMsg('Ya alcanzaste las 10 recetas favoritas.\nSi quieres agregarla, debes quitar alguna como favorita.');
+        setWarningMsg('Ya has alcanzado el límite de 10 recetas favoritas. Para agregar más, debes eliminar algunas de tus favoritas existentes.');
         setShowWarning(true);
       }
     } catch (e) {

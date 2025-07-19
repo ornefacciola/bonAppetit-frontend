@@ -80,7 +80,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         <View style={styles.titleRatingContainer}>
           <Text style={styles.title}>{title}</Text>
           <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={16} color="#FFD700" />
+            <Ionicons name="star" size={16} color="#F2B90D" />
             <Text style={styles.rating}>{rating.toFixed(1)}</Text>
           </View>
         </View>
@@ -107,13 +107,13 @@ const styles = StyleSheet.create({
   },
   cardCompact: {
     width: '100%',
-    maxWidth: 385 ,
+    maxWidth: 380 ,
     alignSelf: 'center',
     marginHorizontal: 0,
   },
   image: {
     width: '100%',
-    height: 130,
+    height: 120,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },

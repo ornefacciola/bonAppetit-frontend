@@ -12,6 +12,7 @@ import GlobalConnectionModal from '@/components/ui/GlobalConnectionModal';
 import SuccessModal from '@/components/ui/SuccessModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import WarningModal from '../../components/ui/WarningModal';
 import { useFavorite } from '../../contexts/FavoriteContext';
 
 // --- PARSEADORES ROBUSTOS ---
@@ -99,6 +100,7 @@ export default function RecipePage() {
   const userRole = useUserRole();
   const { isFavorite: contextIsFavorite, toggleFavorite } = useFavorite();
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
 
   // Safe back navigation
   const handleBack = () => {
@@ -281,15 +283,32 @@ export default function RecipePage() {
         setIsFavorite(false);
         setIsCustomFavorite(false);
       } else {
+        // Verificar límite de 10 favoritos antes de agregar
+        const response = await fetch('https://bon-appetit-production.up.railway.app/api/favourite-recipies', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (response.ok && data.status === 'success') {
+          const currentFavorites = data.recipes || [];
+          if (currentFavorites.length >= 10) {
+            setShowLimitWarning(true);
+            return;
+          }
+        }
+        
         // Agregar favorito normal al backend
-        const response = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
+        const addResponse = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
         });
-        if (response.ok) {
+        if (addResponse.ok) {
           setIsFavorite(true);
           setIsCustomFavorite(false);
         } else {
@@ -487,42 +506,35 @@ export default function RecipePage() {
     <>
       <ScrollView
         style={{ backgroundColor: '#F6F6F6' }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 80, alignItems:'center' }}
       >
         {/* Header with centered logo */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleBack}
-            style={styles.backButton}
-          >
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={handleBack}>
             <Ionicons name="arrow-back" size={28} color="#025E45" />
           </TouchableOpacity>
-          <View style={styles.logoContainer}>
-            <Pressable onPress={() => router.push('/(tabs)/home')}>
-              <AppLogo width={150} height={41} style={{ alignSelf: 'center' }} />
-            </Pressable>
-          </View>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <AppLogo width={150} height={69} style={{ marginBottom: 1 }} />
+        </View>
           <View style={{ width: 28 }} />
         </View>
 
+        <View style={{ width: '100%', maxWidth: 410 }}>
         {/* Title, author, rating */}
         <View style={styles.topSection}>
-          <Text style={[styles.recipeTitle, { fontSize: 24, fontWeight: 'bold', color: '#055B49' }]}>
-            {recipe.title}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+            <Text style={[styles.recipeTitle, { fontSize: 22, fontWeight: 'bold', color: '#055B49', marginBottom: 0 }]}> 
+              {recipe.title}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+              <Text style={styles.rating}>{Number(recipe.averageRating || 0).toFixed(1)}</Text>
+              <Ionicons name="star" size={18} color="#F2B90D" style={{ marginLeft: 2 }} />
+            </View>
+          </View>
           <View style={styles.rowCenter}>
             <Text style={styles.author}>
               @{recipe.user}
             </Text>
-            <Text style={styles.rating}>
-              {Number(recipe.averageRating || 0).toFixed(1)}
-            </Text>
-            <Ionicons
-              name="star"
-              size={18}
-              color="#FFD700"
-              style={{ marginLeft: 2 }}
-            />
             <View style={styles.favoriteRow}>
               {userRole !== 'guest' && recipe.isVerificated && (
                 <TouchableOpacity
@@ -540,9 +552,6 @@ export default function RecipePage() {
               )}
             </View>
           </View>
-          <Text style={{ fontSize: 16, }}>
-              {recipe.description}
-            </Text>
         </View>
         {/* Main image */}
         {recipe.image_url ? (
@@ -552,11 +561,9 @@ export default function RecipePage() {
             contentFit="cover"
           />
         ) : (
-          <Text
-            style={{ textAlign: 'center', color: '#999', marginVertical: 16 }}
-          >
-            No image available
-          </Text>
+          <View style={[styles.mainImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }]}> 
+            <Ionicons name="restaurant-outline" size={57} color="#ccc" />
+          </View>
         )}
 
         {/* Category, favorite, portions */}
@@ -564,22 +571,24 @@ export default function RecipePage() {
           <Text style={styles.category}>
             {recipe.category}
           </Text>
+        </View>
+        <Text style={{ fontSize: 14, paddingHorizontal: 16, marginBottom:9 }}>
+          {recipe.description}      
+        </Text>
+
+        {/* Ingredients */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, marginLeft: 16, marginRight: 16 }}>
+          <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333', marginLeft: 0, marginBottom: 0 }]}>Ingredientes</Text>
           {recipe.isVerificated && !isPersonalized && (
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => setEditModalVisible(true)}
-            >
-              <Ionicons name="pencil" size={18} color="#888" />
+            <TouchableOpacity style={styles.editBtn} onPress={() => setEditModalVisible(true)}>
+              <Ionicons name="pencil" size={23} color="#888" />
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Ingredients */}
-        <Text style={[styles.sectionTitle, { fontWeight: 'bold', color: '#333' }]}>Ingredientes</Text>
         <View style={styles.portionRow}>
           <Ionicons
             name="people-outline"
-            size={18}
+            size={19}
             color="#666"
           />
           <Text style={styles.portionText}>
@@ -593,7 +602,7 @@ export default function RecipePage() {
               >
                 <Ionicons
                   name="remove-circle-outline"
-                  size={22}
+                  size={29}
                   color="#025E45"
                 />
               </TouchableOpacity>
@@ -603,7 +612,7 @@ export default function RecipePage() {
               >
                 <Ionicons
                   name="add-circle-outline"
-                  size={22}
+                  size={29}
                   color="#025E45"
                 />
               </TouchableOpacity>
@@ -832,8 +841,15 @@ export default function RecipePage() {
             </View>
           </View>
         </Modal>
+        </View>
       </ScrollView>
       <GlobalConnectionModal />
+      <WarningModal
+        visible={showLimitWarning}
+        onClose={() => setShowLimitWarning(false)}
+        title="Atención"
+        message="Ya has alcanzado el límite de 10 recetas favoritas. Para agregar más, debes eliminar algunas de tus favoritas existentes."
+      />
     </>
   );
 }
@@ -850,13 +866,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20
   },
-  header: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F6F6F6'
+    justifyContent: 'space-between',
+    marginTop: 60,
+    marginBottom: 15,
+    width: '90%',
+    alignSelf: 'center',
   },
   backButton: {
     width: 28,
@@ -873,8 +890,7 @@ const styles = StyleSheet.create({
     height: 72
   },
   topSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 8
+    paddingHorizontal: 16
   },
   recipeTitle: {
     color: '#055B49',
@@ -885,12 +901,13 @@ const styles = StyleSheet.create({
   rowCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 3
   },
   author: {
     color: '#616161',
     fontWeight: '600',
-    marginRight: 12
+    marginRight: 2,
+    fontSize: 17 
   },
   rating: {
     fontSize: 16,
@@ -898,11 +915,12 @@ const styles = StyleSheet.create({
     marginRight: 2
   },
   mainImage: {
-    width: '90%',
+    width: '92%',
     height: 180,
     borderRadius: 12,
     alignSelf: 'center',
-    marginVertical: 12
+    marginTop:1,
+    marginBottom:7
   },
   infoRow: {
     flexDirection: 'row',
@@ -914,7 +932,7 @@ const styles = StyleSheet.create({
   category: {
     color: '#555555',
     fontWeight: '600',
-    fontSize: 16
+    fontSize: 17
   },
   favoriteBtn: {
     marginLeft: 8,
@@ -926,11 +944,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   sectionTitle: {
-    marginTop: 16,
+    marginTop: 10,
     marginBottom: 8,
     marginLeft: 16,
     fontWeight: 'bold',
-    color: '#333'
+    color: '#333',
+    fontSize: 17 
   },
   portionRow: {
     flexDirection: 'row',
@@ -942,9 +961,10 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     marginRight: 8,
     fontWeight: '600',
-    color: '#333'
+    color: '#333',
+    fontSize: 15
   },
-  portionBtn: { marginHorizontal: 2 },
+  portionBtn: { marginHorizontal: 6 },
   ingredientBox: {
     backgroundColor: '#FFF',
     borderRadius: 10,

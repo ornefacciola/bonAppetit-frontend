@@ -139,11 +139,7 @@ export default function HomeScreen() {
     <>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ThemedView style={styles.container}>
-        {/* Logo */}
-        <Pressable onPress={() => router.push('/(tabs)/home')}>
-          <AppLogo width={150} height={72} marginBottom={24} />
-        </Pressable>
-
+          <AppLogo width={150} height={69} marginBottom={8} />
         {/* Search bar */}
         <TouchableOpacity style={styles.searchContainer} onPress={() => router.push('/search')}>
           <Text style={styles.searchText}>Busca recetas por nombre, ingrediente o usuario</Text>
@@ -262,7 +258,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
-    marginBottom: 19   ,
+    marginBottom: 22   ,
   },
   searchText: {
     flex: 1,
@@ -270,10 +266,10 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     color: '#025E45',
-    fontSize: 16,
+    fontSize: 17,
     fontFamily:'Montserrat-Semibold',
     fontWeight: '600',
-    marginBottom: 8.5,
+    marginBottom: 10,
   },
   horizontalScroll: {
     paddingBottom: 1,

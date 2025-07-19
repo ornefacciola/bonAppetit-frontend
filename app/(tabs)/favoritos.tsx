@@ -142,7 +142,7 @@ export default function FavoritosScreen() {
           <Ionicons name="close" size={32} color="#025E45" />
         </TouchableOpacity>
         <View style={styles.guestContainer}>
-          <AppLogo width={140} height={41} style={{ marginBottom: 32 }} />
+          <AppLogo width={150} height={60} style={{ marginBottom: 8 }} />
           <Ionicons name="heart-outline" size={64} color="#ccc" />
           <Text style={[styles.guestTitle, { color: '#111' }]}>Inicia sesión para ver tus favoritos</Text>
           <Text style={styles.guestSubtitle}>
@@ -162,7 +162,6 @@ export default function FavoritosScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Tus Favoritos</Text>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#025E45" />
           <Text style={styles.loadingText}>Cargando favoritos...</Text>
@@ -174,7 +173,7 @@ export default function FavoritosScreen() {
   return (
     <View style={styles.container}>
       <Pressable onPress={() => router.push('/(tabs)/home')}>
-        <AppLogo width={150} height={72} marginBottom={24} />
+        <AppLogo width={150} height={69} marginBottom={8} />
       </Pressable>
       <Text style={styles.title}>Mis favoritos</Text>
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 50 }]}>
@@ -235,7 +234,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   title: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#025E45',
