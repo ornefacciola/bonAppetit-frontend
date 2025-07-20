@@ -71,7 +71,7 @@ const uploadMediaToCloudinary = async (uri: string): Promise<string> => {
     console.log('Detectado video, usando endpoint de video con timeout extendido');
   } else {
     type = `image/${ext || 'jpg'}`;
-    endpoint = 'https://api.cloudinary.com/drvtr4kxz/image/upload';
+    endpoint = 'https://api.cloudinary.com/v1_1/drvtr4kxz/image/upload';
     console.log('Detectada imagen, usando endpoint de imagen');
   }
 
