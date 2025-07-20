@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Video } from 'expo-av';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { ThemedView } from '@/components/ThemedView';
 import { RecipeRatingModal } from '@/components/receta/RecipeRatingModal';
@@ -71,6 +72,102 @@ interface Recipe {
   rating: Rating[];
   aditionalMedia: string[];
   isVerificated: boolean;
+}
+
+// --- HOOK PARA DETECTAR SI UN COMPONENTE ESTÁ VISIBLE EN PANTALLA ---
+function useIsVisible(ref) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      if (!ref.current) return;
+      ref.current.measure((x, y, width, height, pageX, pageY) => {
+        const windowHeight = Dimensions.get('window').height;
+        const visible = pageY < windowHeight && pageY + height > 0;
+        setIsVisible(visible);
+      });
+    }
+    handleScroll();
+    const listener = Dimensions.addEventListener('change', handleScroll);
+    window.addEventListener && window.addEventListener('scroll', handleScroll);
+    return () => {
+      listener?.remove?.();
+      window.removeEventListener && window.removeEventListener('scroll', handleScroll);
+    };
+  }, [ref]);
+  return isVisible;
+}
+
+// --- COMPONENTE VIDEO CON AUTOPLAY SOLO SI VISIBLE Y CONTROLES PROPIOS ---
+function SmartVideo({ uri, style }) {
+  const videoRef = useRef(null);
+  const containerRef = useRef(null);
+  const isVisible = useIsVisible(containerRef);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const hideTimeout = useRef(null);
+
+  useEffect(() => {
+    if (isVisible && !isPlaying) {
+      setIsPlaying(true);
+    } else if (!isVisible && isPlaying) {
+      setIsPlaying(false);
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.playAsync && videoRef.current.playAsync();
+      } else {
+        videoRef.current.pauseAsync && videoRef.current.pauseAsync();
+      }
+    }
+  }, [isPlaying]);
+
+  // Ocultar controles después de 2 segundos
+  const showAndAutoHideControls = () => {
+    setShowControls(true);
+    if (hideTimeout.current) clearTimeout(hideTimeout.current);
+    hideTimeout.current = setTimeout(() => setShowControls(false), 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hideTimeout.current) clearTimeout(hideTimeout.current);
+    };
+  }, []);
+
+  return (
+    <TouchableOpacity
+      ref={containerRef}
+      style={[style, { justifyContent: 'center', alignItems: 'center' }]}
+      activeOpacity={1}
+      onPress={showAndAutoHideControls}
+    >
+      <Video
+        ref={videoRef}
+        source={{ uri }}
+        style={[style, { position: 'absolute', top: 0, left: 0 }]}
+        resizeMode="cover"
+        shouldPlay={isPlaying}
+        isLooping
+        useNativeControls={false}
+      />
+      {showControls && (
+        <TouchableOpacity
+          style={{ position: 'absolute', zIndex: 2, alignSelf: 'center', top: '40%' }}
+          onPress={() => {
+            setIsPlaying(p => !p);
+            showAndAutoHideControls();
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={48} color="#fff" style={{ opacity: 0.8 }} />
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
+  );
 }
 
 export default function RecipePage() {
@@ -508,10 +605,15 @@ export default function RecipePage() {
     );
   }
 
-  // Inside the main render, log the current values
-  console.log('Render: recipe', recipe);
-  console.log('Render: parsedIngredients', parsedIngredients);
-  console.log('Render: adjustedIngredients', adjustedIngredients);
+  // --- DEBUG: LOG DE URLS DE MEDIA ---
+  if (recipe) {
+    console.log('image_url:', recipe.image_url);
+    parsedSteps.forEach((step, idx) => {
+      if (step.urls && step.urls[0]) {
+        console.log(`Paso ${idx + 1} media:`, step.urls[0]);
+      }
+    });
+  }
 
   return (
     <>
@@ -566,11 +668,15 @@ export default function RecipePage() {
         </View>
         {/* Main image */}
         {recipe.image_url ? (
-          <Image
-            source={{ uri: recipe.image_url }}
-            style={styles.mainImage}
-            contentFit="cover"
-          />
+          recipe.image_url.match(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i) ? (
+            <SmartVideo uri={recipe.image_url} style={styles.mainImage} />
+          ) : (
+            <Image
+              source={{ uri: recipe.image_url }}
+              style={styles.mainImage}
+              contentFit="cover"
+            />
+          )
         ) : (
           <View style={[styles.mainImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }]}> 
             <Ionicons name="restaurant-outline" size={57} color="#ccc" />
@@ -674,9 +780,13 @@ export default function RecipePage() {
               <Text style={styles.stepText}>
                 {idx + 1}. {step.texto}
                 </Text>
-              {step.urls?.length
-                ? <Image source={{ uri: step.urls[0] }} style={styles.stepImage} contentFit="cover" />
-                : null}
+              {step.urls?.length ? (
+                step.urls[0].match(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i) ? (
+                  <SmartVideo uri={step.urls[0]} style={styles.stepImage} />
+                ) : (
+                  <Image source={{ uri: step.urls[0] }} style={styles.stepImage} contentFit="cover" />
+                )
+              ) : null}
             </View>
           ))}
 

@@ -173,8 +173,7 @@ export default function SearchScreen() {
                 <View style={{ width: 28 }} />
             </View>
 
-            {/* Search input + dropdown super pegados */}
-            <View style={{ position: 'relative', zIndex: 10 }}>
+            <View style={{ position: 'relative', zIndex: 10, marginTop:6 }}>
                 <SearchBar
                     value={searchText}
                     onChangeText={searchType === 'ingredientes' ? handleIngredientSearch : setSearchText}

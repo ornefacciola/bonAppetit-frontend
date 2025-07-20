@@ -49,16 +49,38 @@ const parsePasos = (arr: any[] = []) => {
   }));
 };
 
-const uploadImageToCloudinary = async (uri: string): Promise<string> => {
+// Cambiar la sintaxis de MediaType para que funcione correctamente
+// En la selección de media para pasos:
+// Mejorar la función uploadMediaToCloudinary con timeout más largo para videos
+const uploadMediaToCloudinary = async (uri: string): Promise<string> => {
+  console.log('=== INICIANDO SUBIDA A CLOUDINARY ===');
+  console.log('URI:', uri);
+  
   const formData = new FormData();
-
-  const filename = uri.split('/').pop() || 'image.jpg';
+  const filename = uri.split('/').pop() || 'media';
   const match = /\.(\w+)$/.exec(filename);
-  const ext = match ? match[1] : 'jpg';
-  const type = `image/${ext}`;
+  const ext = match ? match[1].toLowerCase() : '';
+  let type = '';
+  let endpoint = '';
+  let isVideo = false;
+
+  if (["mp4", "mov", "avi", "webm", "mkv"].includes(ext)) {
+    type = `video/${ext === 'mp4' ? 'mp4' : 'quicktime'}`;
+    endpoint = 'https://api.cloudinary.com/v1_1/drvtr4kxz/video/upload';
+    isVideo = true;
+    console.log('Detectado video, usando endpoint de video con timeout extendido');
+  } else {
+    type = `image/${ext || 'jpg'}`;
+    endpoint = 'https://api.cloudinary.com/v1_1/drvtr4kxz/image/upload';
+    console.log('Detectada imagen, usando endpoint de imagen');
+  }
+
+  console.log('Endpoint:', endpoint);
+  console.log('Tipo de archivo:', type);
+  console.log('Nombre de archivo:', filename);
+  console.log('Es video:', isVideo);
 
   let fileData: any;
-
   if (Platform.OS === 'web') {
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -74,19 +96,54 @@ const uploadImageToCloudinary = async (uri: string): Promise<string> => {
   formData.append('file', fileData);
   formData.append('upload_preset', 'ml_default');
 
-  const res = await fetch('https://api.cloudinary.com/v1_1/drvtr4kxz/image/upload', {
-    method: 'POST',
-    body: formData,
-  });
-
-  const result = await res.json();
-
-  if (!result.secure_url) {
-    console.error('Error Cloudinary:', result);
-    throw new Error('No se pudo subir la imagen a Cloudinary');
+  console.log('FormData preparado, enviando a Cloudinary...');
+  console.log('Upload preset:', 'ml_default');
+  
+  // Timeout más largo para videos
+  const timeout = isVideo ? 60000 : 30000; // 60 segundos para videos, 30 para imágenes
+  console.log('Timeout configurado:', timeout + 'ms');
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log('Respuesta de Cloudinary - Status:', res.status);
+    console.log('Respuesta de Cloudinary - OK:', res.ok);
+    
+    const result = await res.json();
+    console.log('Respuesta completa de Cloudinary:', JSON.stringify(result, null, 2));
+    
+    if (!result.secure_url) {
+      console.error('ERROR: No se encontró secure_url en la respuesta');
+      console.error('Campos disponibles:', Object.keys(result));
+      throw new Error('No se pudo subir el archivo a Cloudinary - no hay secure_url');
+    }
+    
+    console.log('URL obtenida de Cloudinary:', result.secure_url);
+    console.log('=== SUBIDA A CLOUDINARY COMPLETADA ===');
+    return result.secure_url;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error('Timeout al subir a Cloudinary');
+      throw new Error(`Timeout al subir ${isVideo ? 'video' : 'imagen'}. Intenta con WiFi o un archivo más pequeño.`);
+    }
+    throw error;
   }
+};
 
-  return result.secure_url;
+// Agregar función para detectar si es video
+const isVideo = (uri: string) => {
+  const ext = uri.split('.').pop()?.toLowerCase();
+  return ['mp4', 'mov', 'avi', 'webm', 'mkv'].includes(ext || '');
 };
 
 
@@ -108,6 +165,8 @@ export default function CargarRecetaWizard() {
   const params = useLocalSearchParams();
   const [step, setStep] = useState<Step>('titulo');
   const [loading, setLoading] = useState(false);
+  // Cambiar el estado loadingPicker para que sea string | false
+  const [loadingPicker, setLoadingPicker] = useState<string | false>(false);
 
   // Modales visuales
   const [modalExito, setModalExito] = useState(false);
@@ -311,6 +370,8 @@ export default function CargarRecetaWizard() {
 
   // --------- CREAR RECETA NUEVA (POST) ---------
   const enviarReceta = async () => {
+    console.log('=== INICIANDO ENVÍO DE RECETA ===');
+    
     if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
       setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
       return;
@@ -320,32 +381,42 @@ export default function CargarRecetaWizard() {
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) throw new Error('Token no encontrado');
+      
+      console.log('Token encontrado:', token.substring(0, 20) + '...');
 
       let imageUrl = null;
 
       if (fotoFinal) {
-          imageUrl = await uploadImageToCloudinary(fotoFinal);
-        }
+        console.log('Subiendo foto final a Cloudinary...');
+        imageUrl = await uploadMediaToCloudinary(fotoFinal);
+        console.log('Foto final subida:', imageUrl);
+      }
 
-    const pasosConImagenes = await Promise.all(
-      pasos.map(async (p) => {
-        let url = p.media;
+      console.log('Procesando pasos con imágenes...');
+      const pasosConImagenes = await Promise.all(
+        pasos.map(async (p, index) => {
+          let url = p.media;
+          console.log(`Paso ${index + 1}:`, p.descripcion.substring(0, 30) + '...');
 
-        if (p.media && p.media.startsWith('file')) {
-          try {
-            url = await uploadImageToCloudinary(p.media);
-          } catch (e) {
-            console.error('Error al subir imagen de paso:', e);
-            throw new Error('Error al subir una imagen de paso');
+          if (p.media && p.media.startsWith('file')) {
+            try {
+              console.log(`Subiendo media del paso ${index + 1}...`);
+              url = await uploadMediaToCloudinary(p.media);
+              console.log(`Media del paso ${index + 1} subida:`, url);
+            } catch (e) {
+              console.error('Error al subir imagen de paso:', e);
+              throw new Error('Error al subir una imagen de paso');
+            }
           }
-        }
 
-        return {
-          description: p.descripcion,
-          urls: url ? [url] : [],
-        };
-      })
-    );
+          return {
+            description: p.descripcion,
+            urls: url ? [url] : [],
+          };
+        })
+      );
+
+      console.log('Pasos procesados:', pasosConImagenes.length);
 
       const body = {
         title: titulo,
@@ -359,28 +430,77 @@ export default function CargarRecetaWizard() {
         isVerificated: false,
       };
 
-      const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+      console.log('Body preparado:', JSON.stringify(body, null, 2));
 
-      if (!res.ok) throw new Error('Error al enviar la receta');
-      setModalExito(true);
+      console.log('Enviando al backend...');
+      
+      // Detectar si hay videos en la receta
+      const hasVideos = pasosConImagenes.some(paso => 
+        paso.urls.some(url => url && ['mp4', 'mov', 'avi', 'webm', 'mkv'].some(ext => url.includes(ext)))
+      ) || (imageUrl && ['mp4', 'mov', 'avi', 'webm', 'mkv'].some(ext => imageUrl.includes(ext)));
+      
+      const backendTimeout = hasVideos ? 90000 : 30000; // 90 segundos para videos, 30 para imágenes
+      console.log('Timeout para backend:', backendTimeout + 'ms');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), backendTimeout);
+      
+      try {
+        const res = await fetch('https://bon-appetit-production.up.railway.app/api/recipies', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
 
-      // Limpiar formulario
-      setTitulo('');
-      setDescripcion('');
-      setCategoria('');
-      setPorciones('');
-      setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
-      setPasos([{ descripcion: '', media: null }]);
-      setFotoFinal(null);
+        console.log('Respuesta del backend - Status:', res.status);
+        console.log('Respuesta del backend - OK:', res.ok);
+        
+        const responseText = await res.text();
+        console.log('Respuesta del backend - Texto:', responseText);
+        
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+          console.log('Respuesta del backend - JSON:', responseData);
+        } catch (e) {
+          console.error('Error parseando JSON de respuesta:', e);
+          throw new Error('Respuesta inválida del servidor');
+        }
+
+        if (!res.ok) {
+          console.error('Error del backend:', responseData);
+          throw new Error(responseData.error || responseData.message || 'Error al enviar la receta');
+        }
+        
+        console.log('=== RECETA ENVIADA EXITOSAMENTE ===');
+        setModalExito(true);
+
+        // Limpiar formulario
+        setTitulo('');
+        setDescripcion('');
+        setCategoria('');
+        setPorciones('');
+        setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
+        setPasos([{ descripcion: '', media: null }]);
+        setFotoFinal(null);
+
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          console.error('Timeout al enviar al backend');
+          throw new Error('Timeout al enviar la receta. Intenta con WiFi o un archivo más pequeño.');
+        }
+        throw error;
+      }
 
     } catch (err: any) {
+      console.error('Error en enviarReceta:', err);
       setModalError({ visible: true, mensaje: err.message || 'No se pudo enviar la receta' });
     }
     setLoading(false);
@@ -406,7 +526,7 @@ const modificarReceta = async () => {
     // 1. Subir imagen final si es local
     let imageUrl = fotoFinal;
     if (fotoFinal && fotoFinal.startsWith('file')) {
-      imageUrl = await uploadImageToCloudinary(fotoFinal);
+      imageUrl = await uploadMediaToCloudinary(fotoFinal);
     }
 
     // 2. Subir imágenes de pasos si son locales
@@ -416,7 +536,7 @@ const modificarReceta = async () => {
 
         if (p.media && p.media.startsWith('file')) {
           try {
-            url = await uploadImageToCloudinary(p.media);
+            url = await uploadMediaToCloudinary(p.media);
           } catch (e) {
             console.error('Error al subir imagen de paso:', e);
             throw new Error('Error al subir una imagen de paso');
@@ -549,6 +669,80 @@ const modificarReceta = async () => {
       err.ingredientes.some(Boolean) ||
       err.pasos.some(Boolean)
     );
+  };
+
+  // En la selección de media para pasos:
+  const handlePickMediaPaso = async (index: number) => {
+    setLoadingPicker(`paso-${index}`);
+    try {
+      const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permiso.granted) {
+        setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
+        return;
+      }
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        quality: 0.8,
+        base64: false
+      });
+      if (!resultado.canceled && resultado.assets.length > 0) {
+        const asset = resultado.assets[0];
+        if (asset.type === 'video') {
+          let durationSec = asset.duration;
+          if (typeof durationSec === 'number') {
+            if (durationSec > 100) durationSec = durationSec / 1000;
+            if (durationSec > 25) {
+              setModalError({ visible: true, mensaje: 'El video seleccionado dura más de 25 segundos. Por favor, elige uno más corto.' });
+              return;
+            }
+          } else {
+            setModalWarning({ visible: true, mensaje: 'No se pudo verificar la duración del video. Por favor, asegúrate de que dure menos de 25 segundos.' });
+          }
+        }
+        const nuevos = [...pasos];
+        nuevos[index].media = asset.uri;
+        setPasos(nuevos);
+      }
+    } finally {
+      setLoadingPicker(false);
+    }
+  };
+
+  // En la selección de foto final:
+  const handlePickMediaFinal = async () => {
+    setLoadingPicker('final');
+    try {
+      const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permiso.granted) {
+        setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
+        return;
+      }
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        quality: 0.8,
+        base64: false
+      });
+      if (!resultado.canceled && resultado.assets.length > 0) {
+        const asset = resultado.assets[0];
+        if (asset.type === 'video') {
+          let durationSec = asset.duration;
+          if (typeof durationSec === 'number') {
+            if (durationSec > 100) durationSec = durationSec / 1000;
+            if (durationSec > 25) {
+              setModalError({ visible: true, mensaje: 'El video seleccionado dura más de 25 segundos. Por favor, elige uno más corto.' });
+              return;
+            }
+          } else {
+            setModalWarning({ visible: true, mensaje: 'No se pudo verificar la duración del video. Por favor, asegúrate de que dure menos de 25 segundos.' });
+          }
+        }
+        setFotoFinal(asset.uri);
+      }
+    } finally {
+      setLoadingPicker(false);
+    }
   };
 
   if (step === 'titulo') {
@@ -806,35 +1000,49 @@ const modificarReceta = async () => {
           {/* FOTO POR PASO */}
           <TouchableOpacity
             style={styles.addButton}
-            onPress={async () => {
-              const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-              if (!permiso.granted) {
-                setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
-                return;
-              }
-              const resultado = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                quality: 0.8,
-                base64: false
-              });
-              if (!resultado.canceled && resultado.assets.length > 0) {
-                const nuevos = [...pasos];
-                nuevos[index].media = resultado.assets[0].uri;
-                setPasos(nuevos);
-              }
-            }}
+            onPress={() => handlePickMediaPaso(index)}
           >
             <Text style={styles.addButtonText}>
-              {paso.media ? 'Cambiar foto del paso' : 'Agregar foto del paso'}
+              {paso.media ? 'Cambiar foto o video del paso' : 'Agregar foto o video del paso'}
             </Text>
           </TouchableOpacity>
           {paso.media && (
             <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 90, height: 90 }}>
+              {/* Loader solo si está cargando y ya hay media seleccionada */}
+              {loadingPicker === `paso-${index}` && (
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 10 }}>
+                  <ActivityIndicator size="large" color="#F59C1D" />
+                </View>
+              )}
+              {/* Imagen/video o fallback */}
               <Image
                 source={{ uri: paso.media }}
                 style={{ width: 90, height: 90, borderRadius: 10 }}
+                onError={() => {
+                  // Si hay error al cargar la imagen/video, mostrar recuadro
+                  const nuevos = [...pasos];
+                  nuevos[index].mediaError = true;
+                  setPasos(nuevos);
+                }}
               />
+              {paso.mediaError && (
+                <View style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  width: 90, 
+                  height: 90, 
+                  borderRadius: 10, 
+                  backgroundColor: '#f0f0f0', 
+                  justifyContent: 'center', 
+                  alignItems: 'center' 
+                }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 24 }}>🎥</Text>
+                    <Text style={{ fontSize: 10, color: '#666' }}>Video</Text>
+                  </View>
+                </View>
+              )}
               <TouchableOpacity
                 style={{
                   position: 'absolute',
@@ -878,27 +1086,18 @@ const modificarReceta = async () => {
       <Text style={styles.label}>Foto final (opcional)</Text>
       <TouchableOpacity
         style={styles.addButton}
-        onPress={async () => {
-          const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!permiso.granted) {
-            setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
-            return;
-          }
-          const resultado = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 0.8,
-            base64: false
-          });
-          if (!resultado.canceled && resultado.assets.length > 0) {
-            setFotoFinal(resultado.assets[0].uri);
-          }
-        }}
+        onPress={handlePickMediaFinal}
       >
-        <Text style={styles.addButtonText}>{fotoFinal ? 'Cambiar foto' : 'Agregar foto'}</Text>
+        <Text style={styles.addButtonText}>{fotoFinal ? 'Cambiar foto o video' : 'Agregar foto o video'}</Text>
       </TouchableOpacity>
       {fotoFinal && (
-        <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 120, height: 120 }}>
+        <View style={{ alignSelf: 'center', marginBottom: 50, position: 'relative', width: 90, height: 90 }}>
+          {loadingPicker === 'final' && (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 10 }}>
+              <ActivityIndicator size="large" color="#F59C1D" />
+            </View>
+          )}
+          {/* Imagen/video o fallback */}
           <Image
             source={{ uri: fotoFinal }}
             style={{ width: 120, height: 120, borderRadius: 12 }}
@@ -919,6 +1118,11 @@ const modificarReceta = async () => {
           >
             <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#D32F2F', lineHeight: 20 }}>×</Text>
           </TouchableOpacity>
+        </View>
+      )}
+      {loadingPicker && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.6)' }}>
+          <ActivityIndicator size="large" color="#F59C1D" />
         </View>
       )}
 
@@ -1023,9 +1227,18 @@ const modificarReceta = async () => {
       <PublishRecipeNoWifiModal
         visible={showWifiModal}
         onPublishWithMobile={async () => {
+          console.log('=== PUBLICANDO CON DATOS MÓVILES ===');
           setShowWifiModal(false);
-          await enviarReceta();
-          setModalExito(true);
+          try {
+            await enviarReceta();
+            setModalExito(true);
+          } catch (error) {
+            console.error('Error publicando con datos móviles:', error);
+            setModalError({ 
+              visible: true, 
+              mensaje: 'Error al publicar con datos móviles. Intenta con WiFi o guarda como borrador.' 
+            });
+          }
         }}
         onPublishWithWifi={async () => {
           setShowWifiModal(false);
