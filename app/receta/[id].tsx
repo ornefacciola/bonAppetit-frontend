@@ -21,11 +21,10 @@ function parseIngredientes(arr: any[] = []) {
   if (!Array.isArray(arr) || arr.length === 0) return [];
   return arr.map((i: any) => ({
     name: i.name || i.nombre || i.ingredient || '',
-    quantity:
-      i.quantity !== undefined
-        ? i.quantity
-        : i.cantidad !== undefined
-        ? i.cantidad
+    quantity: i.quantity !== undefined
+      ? Number(i.quantity)
+      : i.cantidad !== undefined
+        ? Number(i.cantidad)
         : '',
     unit: i.unit || i.unidad || i.medida || '',
   }));
@@ -220,12 +219,16 @@ export default function RecipePage() {
             ? data.payload[0]
             : data.payload;
           if (foundRecipe) {
+            console.log('Fetched recipe:', foundRecipe);
             setRecipe(foundRecipe);
             // --- PARSEO ROBUSTO PARA CUALQUIER FORMATO ---
             const parsedIng = parseIngredientes(foundRecipe.ingredients);
+            console.log('Parsed ingredients:', parsedIng);
             setParsedIngredients(parsedIng);
             setPortions(foundRecipe.portions || 1);
-            setParsedSteps(parseSteps(foundRecipe.stepsList));
+            const parsedSteps = parseSteps(foundRecipe.stepsList);
+            console.log('Parsed steps:', parsedSteps);
+            setParsedSteps(parsedSteps);
           } else {
             setError('Receta no encontrada');
           }
@@ -249,6 +252,7 @@ export default function RecipePage() {
   useEffect(() => {
     if (parsedIngredients && !isPersonalized) {
       setAdjustedIngredients(parsedIngredients.map(ing => ({ ...ing })));
+      console.log('Set adjustedIngredients (not personalized):', parsedIngredients);
     }
   }, [parsedIngredients, isPersonalized]);
 
@@ -269,7 +273,6 @@ export default function RecipePage() {
   // Recalculate adjustedIngredients when base or portions changes
   useEffect(() => {
     if (isPersonalized && customBaseIngredients) {
-      // Use the saved portions as base
       setAdjustedIngredients(
         customBaseIngredients.map((ing: Ingredient) => ({
           ...ing,
@@ -278,14 +281,15 @@ export default function RecipePage() {
           : ing.quantity
         }))
       );
+      console.log('Set adjustedIngredients (personalized):', customBaseIngredients);
     } else if (parsedIngredients && !isPersonalized && recipe) {
       const factor = portions / (recipe.portions || 1);
-      setAdjustedIngredients(
-        parsedIngredients.map((ing: Ingredient) =>  ({
-          ...ing,
-          quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
-        }))
-      );
+      const adj = parsedIngredients.map((ing: Ingredient) =>  ({
+        ...ing,
+        quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
+      }));
+      setAdjustedIngredients(adj);
+      console.log('Set adjustedIngredients (factor):', adj);
     }
   }, [portions, customBaseIngredients, isPersonalized, parsedIngredients, recipe]);
 
@@ -424,16 +428,18 @@ export default function RecipePage() {
 
   // Lógica para editar un ingrediente y recalcular el resto
   const handleEditIngredient = () => {
-    if (selectedIngredientIdx === null || !editQuantity || !recipe) return;
-    const original = recipe.ingredients[selectedIngredientIdx];
+    if (selectedIngredientIdx === null || !editQuantity || !adjustedIngredients.length) return;
+    const original = adjustedIngredients[selectedIngredientIdx];
     const originalQty = typeof original.quantity === 'number' ? original.quantity : parseFloat(original.quantity as string);
     const newQty = parseFloat(editQuantity);
     if (!originalQty || !newQty) return;
     const factor = newQty / originalQty;
     setAdjustedIngredients(
-      recipe.ingredients.map((ing: Ingredient) => ({
+      adjustedIngredients.map((ing) => ({
         ...ing,
-        quantity: typeof ing.quantity === 'number' ? +(ing.quantity as number) * factor : ing.quantity
+        quantity: typeof ing.quantity === 'number'
+          ? +(ing.quantity as number) * factor
+          : ing.quantity
       }))
     );
     setEditModalVisible(false);
