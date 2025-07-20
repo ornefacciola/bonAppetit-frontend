@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "bonAppettitFrontend",
-    "slug": "bonAppettitFrontend",
+    "name": "Bon Appetit",
+    "slug": "bon-appetit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/bon-appetit-splash-1024x1024.png",
@@ -24,7 +24,7 @@
         "visible": "auto",         
         "barStyle": "light-content" 
       },
-      "package": "com.juanirios.bonAppettitFrontend",
+      "package": "com.juanirios.bonappetit",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
