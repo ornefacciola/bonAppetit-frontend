@@ -400,7 +400,6 @@ export default function RecipePage() {
             return;
           }
         }
-        
         // Agregar favorito normal al backend
         const addResponse = await fetch(`https://bon-appetit-production.up.railway.app/api/favourite-recipies/${recipe._id}/`, {
           method: 'POST',
@@ -413,12 +412,24 @@ export default function RecipePage() {
           setIsFavorite(true);
           setIsCustomFavorite(false);
         } else {
-          throw new Error('Failed to add to backend');
+          // Leer el error del backend
+          let errorData = {};
+          try {
+            errorData = await addResponse.json();
+          } catch {}
+          if (errorData && errorData.error && errorData.error.includes('10 favourite recipes')) {
+            setShowLimitWarning(true);
+            return;
+          }
+          throw new Error(errorData.error || 'Failed to add to backend');
         }
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      alert('Error al actualizar favorito');
+      // Solo mostrar el alert si NO es el error de límite de favoritos
+      if (!(error.message && error.message.includes('10 favourite recipes'))) {
+        console.error('Error toggling favorite:', error);
+        alert('Error al actualizar favorito');
+      }
     }
   };
 
