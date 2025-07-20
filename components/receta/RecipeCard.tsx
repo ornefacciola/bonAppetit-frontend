@@ -37,6 +37,19 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const router = useRouter();
   const isCompact = variant === 'compact';
 
+  // Detectar si es video
+  const isVideo = (url: string) =>
+    /\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i.test(url);
+
+  // Obtener thumbnail de Cloudinary para videos
+  const getVideoThumbnail = (url: string) => {
+    // Cloudinary: reemplaza /video/upload/ por /video/upload/so_2/ y cambia la extensión a .jpg
+    return url.replace('/video/upload/', '/video/upload/so_2/').replace(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i, '.jpg');
+  };
+
+  // Estado para fallback si falla la carga del thumbnail
+  const [thumbnailError, setThumbnailError] = React.useState(false);
+
   const handlePress = () => {
     if (onPress) {
       onPress(id);
@@ -54,11 +67,26 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       onPress={handlePress}
     >
       {imageUrl ? (
-        <Image
-          source={{ uri: imageUrl }}
-          style={[styles.image, isCompact && styles.imageCompact]}
-          contentFit="cover"
-        />
+        isVideo(imageUrl) ? (
+          thumbnailError ? (
+            <View style={[styles.image, isCompact && styles.imageCompact, styles.noImage, { justifyContent: 'center', alignItems: 'center' }]}> 
+              <Ionicons name="videocam" size={48} color="#ccc" />
+            </View>
+          ) : (
+            <Image
+              source={{ uri: getVideoThumbnail(imageUrl) }}
+              style={[styles.image, isCompact && styles.imageCompact]}
+              contentFit="cover"
+              onError={() => setThumbnailError(true)}
+            />
+          )
+        ) : (
+          <Image
+            source={{ uri: imageUrl }}
+            style={[styles.image, isCompact && styles.imageCompact]}
+            contentFit="cover"
+          />
+        )
       ) : (
         <View style={[styles.image, isCompact && styles.imageCompact, styles.noImage]}>
           <Ionicons name="restaurant-outline" size={48} color="#ccc" />
