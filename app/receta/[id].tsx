@@ -748,17 +748,21 @@ export default function RecipePage() {
           )}
         </View>
         <View style={styles.ingredientBox}>
-          {adjustedIngredients.map((ing, idx) => (
-            <Text
-              key={idx}
-              style={styles.ingredientText}
-            >
-              {Number(ing.quantity) % 1 === 0
-                ? ing.quantity
-                : Number(ing.quantity).toFixed(2)
-              } {ing.unit} {ing.name}
-            </Text>
-          ))}
+          {adjustedIngredients && adjustedIngredients.length > 0 ? (
+            adjustedIngredients.map((ing, idx) => (
+              <Text
+                key={idx}
+                style={styles.ingredientText}
+              >
+                {Number(ing.quantity) % 1 === 0
+                  ? ing.quantity
+                  : Number(ing.quantity).toFixed(2)
+                } {ing.unit} {ing.name}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.ingredientText}>No hay ingredientes</Text>
+          )}
         </View>
 
         {/* Botón guardar favorito personalizado */}
