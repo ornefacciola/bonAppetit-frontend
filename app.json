@@ -4,7 +4,7 @@
     "slug": "bon-appetit",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/bon-appetit-splash-1024x1024.png",
+    "icon": "./assets/images/bon-appetit-smaller.png",
     "scheme": "bonappettitfrontend",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -16,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/bon-appetit-splash-1024x1024.png",
+        "foregroundImage": "./assets/images/bon-appetit-smaller.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdge": true,
@@ -40,7 +40,7 @@
       [
         "expo-splash-screen",
         {
-          "image":  "./assets/images/bon-appetit-splash-1024x1024.png",
+          "image":  "./assets/images/bon-appetit-smaller.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
