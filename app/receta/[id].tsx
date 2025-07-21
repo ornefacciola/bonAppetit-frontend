@@ -790,8 +790,8 @@ export default function RecipePage() {
             <View key={idx} style={styles.stepBox}>
               <Text style={styles.stepText}>
                 {idx + 1}. {step.texto}
-                </Text>
-              {step.urls?.length ? (
+              </Text>
+              {step.urls && Array.isArray(step.urls) && typeof step.urls[0] === 'string' && step.urls[0] ? (
                 step.urls[0].match(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i) ? (
                   <SmartVideo uri={step.urls[0]} style={styles.stepImage} />
                 ) : (

@@ -44,16 +44,16 @@ export function ProtectedPage({ children, pageName }: ProtectedPageProps) {
     return (
       <View style={styles.guestContainer}>
         <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-          <Ionicons name="close" size={32} color="#025E45" />
+          <Ionicons name="close" size={24} color="#025E45" />
         </TouchableOpacity>
-        <AppLogo width={140} height={41} style={{ marginBottom: 32 }} />
-        <Ionicons name={getIcon()} size={64} color="#ccc" />
+        <AppLogo width={100} height={29} style={{ marginBottom: 20 }} />
+        <Ionicons name={getIcon()} size={38} color="#b0b0b0" style={{ marginBottom: 12 }} />
         <Text style={styles.guestTitle}>{getMessage()}</Text>
         <TouchableOpacity
-          style={[styles.loginButton, { backgroundColor: '#025E45', borderWidth: 0, marginTop: 32, paddingVertical: 12, width: 180 }]}
+          style={styles.loginButton}
           onPress={() => router.replace('/login')}
         >
-          <Text style={[styles.loginButtonText, { color: '#fff', fontSize: 18 }]}>Iniciar Sesión</Text>
+          <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
         </TouchableOpacity>
       </View>
     );
@@ -71,27 +71,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   guestTitle: {
-    fontSize: 20,
-    marginBottom: 24,
-    color: 'black',
+    fontSize: 15,
+    marginBottom: 18,
+    color: '#222',
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 10,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
   loginButton: {
     backgroundColor: '#025E45',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    elevation: 2,
   },
   loginButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
   closeButton: {
     position: 'absolute',
-    top: 40,
-    right: 24,
+    top: 28,
+    right: 18,
     zIndex: 10,
   },
 }); 
