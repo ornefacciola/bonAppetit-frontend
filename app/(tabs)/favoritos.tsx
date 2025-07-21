@@ -139,20 +139,20 @@ export default function FavoritosScreen() {
     return (
       <View style={styles.container}>
         <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-          <Ionicons name="close" size={32} color="#025E45" />
+          <Ionicons name="close" size={24} color="#025E45" />
         </TouchableOpacity>
         <View style={styles.guestContainer}>
-          <AppLogo width={150} height={60} style={{ marginBottom: 8 }} />
-          <Ionicons name="heart-outline" size={64} color="#ccc" />
-          <Text style={[styles.guestTitle, { color: '#111' }]}>Inicia sesión para ver tus favoritos</Text>
+          <AppLogo width={100} height={29} style={{ marginBottom: 20 }} />
+          <Ionicons name="heart-outline" size={38} color="#b0b0b0" style={{ marginBottom: 12 }} />
+          <Text style={styles.guestTitle}>Inicia sesión para ver tus favoritos</Text>
           <Text style={styles.guestSubtitle}>
             Guarda tus recetas favoritas y personalízalas a tu gusto
           </Text>
           <TouchableOpacity 
-            style={[styles.loginButton, { backgroundColor: '#025E45', borderWidth: 0, marginTop: 32, paddingVertical: 12, width: 180, alignItems: 'center' }]}
+            style={styles.loginButton}
             onPress={() => router.push('/login')}
           >
-            <Text style={[styles.loginButtonText, { color: '#fff', fontSize: 18, textAlign: 'center' }]}>Iniciar Sesión</Text>
+            <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -173,7 +173,7 @@ export default function FavoritosScreen() {
   return (
     <View style={styles.container}>
       <Pressable onPress={() => router.push('/(tabs)/home')}>
-        <AppLogo width={150} height={69} marginBottom={8} />
+        <AppLogo width={150} height={69} style={{ marginBottom: 8 }} />
       </Pressable>
       <Text style={styles.title}>Mis favoritos</Text>
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 50 }]}>
@@ -230,8 +230,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F6F6F6',
-    paddingHorizontal: 16,
-    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingTop: 48,
   },
   title: {
     fontSize: 21,
@@ -239,6 +239,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#025E45',
     textAlign: 'center',
+    marginTop: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -296,27 +297,43 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 200,
+    paddingTop: 120,
   },
   guestTitle: {
-    fontSize: 20,
-    marginBottom: 12,
-    color: '#025E45',
+    fontSize: 15,
+    marginBottom: 10,
+    color: '#222',
     textAlign: 'center',
+    marginTop: 10,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
   guestSubtitle: {
     color: '#666',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 18,
+    fontSize: 13,
   },
   loginButton: {
     backgroundColor: '#025E45',
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    elevation: 2,
+    marginTop: 18,
   },
   loginButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
   scrollContent: {
     alignItems: 'stretch',
@@ -325,8 +342,8 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 40,
-    right: 24,
+    top: 28,
+    right: 18,
     zIndex: 10,
   },
 }); 
