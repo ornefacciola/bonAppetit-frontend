@@ -29,11 +29,24 @@ function parseIngredientes(arr: any[] = []) {
     unit: i.unit || i.unidad || i.medida || '',
   }));
 }
+// --- SANITIZADOR DE ARRAYS DE MEDIA ---
+function sanitizeMediaArray(arr: any): string[] {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .flat()
+    .map(u => {
+      if (typeof u === 'string') return u;
+      if (u && typeof u === 'object' && typeof u.uri === 'string') return u.uri;
+      return null;
+    })
+    .filter(Boolean);
+}
+// Corrige parseSteps para asegurar que urls sea siempre array de strings válidos
 function parseSteps(arr: any[] = []) {
   if (!Array.isArray(arr) || arr.length === 0) return [];
   return arr.map((p: any) => ({
     texto: p.texto || p.descripcion || p.description || '',
-    urls: p.urls || (p.media ? [p.media] : p.image ? [p.image] : []),
+    urls: sanitizeMediaArray(p.urls || p.media || p.image),
   }));
 }
 
@@ -167,6 +180,55 @@ function SmartVideo({ uri, style }) {
         </TouchableOpacity>
       )}
     </TouchableOpacity>
+  );
+}
+
+// --- Carrusel principal ---
+function MediaCarousel({ media, style, dotStyle, dotActiveStyle, videoStyle, slideWidth, showDotsInside }) {
+  const [active, setActive] = useState(0);
+  const scrollRef = useRef(null);
+  const onScroll = (e) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
+    setActive(idx);
+  };
+  return (
+    <View style={{ width: slideWidth, alignSelf: 'center' }}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        style={[style, { width: slideWidth }]}
+      >
+        {media.map((uri, idx) => (
+          <View key={idx} style={{ width: slideWidth, height: style.height, justifyContent: 'center', alignItems: 'center' }}>
+            {uri.match(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i) ? (
+              <SmartVideo uri={uri} style={[style, videoStyle, { width: slideWidth, height: style.height }]} />
+            ) : (
+              <Image source={{ uri }} style={[style, { width: slideWidth, height: style.height }]} contentFit="cover" />
+            )}
+          </View>
+        ))}
+      </ScrollView>
+      {/* En MediaCarousel, renderiza los dots solo si media.length > 1 */}
+      {media.length > 1 && (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: showDotsInside ? 8 : 6, marginBottom: showDotsInside ? 8 : 0 }}>
+          {media.map((_, idx) => (
+            <View
+              key={idx}
+              style={[
+                { width: 8, height: 8, borderRadius: 4, marginHorizontal: 3, backgroundColor: '#ccc' },
+                dotStyle,
+                active === idx && { backgroundColor: '#025E45' },
+                active === idx && dotActiveStyle,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -626,6 +688,10 @@ export default function RecipePage() {
     });
   }
 
+  // --- Media principal ---
+  const mainMedia = sanitizeMediaArray([recipe.image_url, ...(recipe.aditionalMedia || [])]);
+  console.log('mainMedia:', mainMedia);
+  console.log('parsedSteps:', parsedSteps);
   return (
     <>
       <ScrollView
@@ -678,16 +744,15 @@ export default function RecipePage() {
           </View>
         </View>
         {/* Main image */}
-        {recipe.image_url ? (
-          recipe.image_url.match(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i) ? (
-            <SmartVideo uri={recipe.image_url} style={styles.mainImage} />
-          ) : (
-            <Image
-              source={{ uri: recipe.image_url }}
-              style={styles.mainImage}
-              contentFit="cover"
-            />
-          )
+        {mainMedia.length > 0 ? (
+          <MediaCarousel
+            media={mainMedia}
+            style={styles.mainImage}
+            dotStyle={{ backgroundColor: '#e0e0e0' }}
+            dotActiveStyle={{ backgroundColor: '#025E45' }}
+            videoStyle={{ borderRadius: 18 }}
+            slideWidth={Dimensions.get('window').width * 0.92}
+          />
         ) : (
           <View style={[styles.mainImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }]}> 
             <Ionicons name="restaurant-outline" size={57} color="#ccc" />
@@ -790,14 +855,29 @@ export default function RecipePage() {
             <View key={idx} style={styles.stepBox}>
               <Text style={styles.stepText}>
                 {idx + 1}. {step.texto}
-                </Text>
-              {step.urls?.length ? (
-                step.urls[0].match(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i) ? (
-                  <SmartVideo uri={step.urls[0]} style={styles.stepImage} />
-                ) : (
-                  <Image source={{ uri: step.urls[0] }} style={styles.stepImage} contentFit="cover" />
-                )
-              ) : null}
+              </Text>
+              {step.urls?.length > 0 && (
+                <View style={{
+                  width: '100%',
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  alignSelf: 'center',
+                  marginTop: 8,
+                  marginBottom: 0,
+                  backgroundColor: '#fff',
+                  flexDirection: 'column'
+                }}>
+                  <MediaCarousel
+                    media={step.urls}
+                    style={{ width: '100%', height: 130 }}
+                    dotStyle={{ backgroundColor: '#e0e0e0', width: 6, height: 6 }}
+                    dotActiveStyle={{ backgroundColor: '#025E45', width: 8, height: 8 }}
+                    videoStyle={{ borderRadius: 0 }}
+                    slideWidth={Dimensions.get('window').width - 32 - 24}
+                    showDotsInside
+                  />
+                </View>
+              )}
             </View>
           ))}
 
@@ -1047,12 +1127,12 @@ const styles = StyleSheet.create({
     marginRight: 2
   },
   mainImage: {
-    width: '92%',
+    width: Dimensions.get('window').width * 0.92,
     height: 180,
     borderRadius: 12,
     alignSelf: 'center',
-    marginTop:1,
-    marginBottom:7
+    marginTop: 1,
+    marginBottom: 7
   },
   infoRow: {
     flexDirection: 'row',
@@ -1114,7 +1194,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: '#FFF',
     borderRadius: 10,
-    padding: 12
+    paddingTop: 12,
+    paddingHorizontal: 12,
   },
   stepText: {
     fontSize: 15,
@@ -1122,9 +1203,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   stepImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: 8,
+    width: '100%', // Para que se ajuste al contenedor
+    height: 180, // Puedes ajustar este valor si quieres más o menos altura
+    borderRadius: 8, // Quitado para evitar corte doble
     marginTop: 4
   },
   evalBtn: {

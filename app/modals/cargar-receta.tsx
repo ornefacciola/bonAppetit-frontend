@@ -2,6 +2,7 @@ import ErrorModal from '@/components/ui/ErrorModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -38,14 +39,11 @@ const parseIngredientes = (arr: any[] = []) => {
 
 const parsePasos = (arr: any[] = []) => {
   if (!Array.isArray(arr) || arr.length === 0)
-    return [{ descripcion: '', media: null }];
+    return [{ descripcion: '', media: [] as string[] }];
   return arr.map((p: any) => ({
     descripcion: p.descripcion || p.description || p.texto || '',
     media:
-      (p.urls && p.urls[0]) ||
-      p.media ||
-      p.image ||
-      null,
+      (p.urls && Array.isArray(p.urls) ? p.urls : p.media ? [p.media] : p.image ? [p.image] : [])
   }));
 };
 
@@ -140,11 +138,17 @@ const uploadMediaToCloudinary = async (uri: string): Promise<string> => {
   }
 };
 
-// Agregar función para detectar si es video
-const isVideo = (uri: string) => {
+// Agregar función para detectar si es video (robusta)
+const isVideo = (uri: any) => {
+  if (!uri || typeof uri !== 'string') return false;
   const ext = uri.split('.').pop()?.toLowerCase();
   return ['mp4', 'mov', 'avi', 'webm', 'mkv'].includes(ext || '');
 };
+
+// Agregar función para obtener thumbnail de Cloudinary
+const isCloudinary = (url: string) => url.includes('cloudinary.com');
+const getVideoThumbnail = (url: string) =>
+  url.replace('/video/upload/', '/video/upload/so_2/').replace(/\.(mp4|mov|avi|webm|mkv)(\?.*)?$/i, '.jpg');
 
 
 type Step = 'titulo' | 'conflicto' | 'formulario';
@@ -157,11 +161,51 @@ interface BorradorReceta {
   porciones: string;
   ingredientes: any[];
   pasos: any[];
-  fotoFinal: string | null;
+  fotoFinal: (string | { uri: string; [key: string]: any })[];
   recetaId?: string;
 }
 
+// --- COMPONENTE PARA PREVISUALIZAR MEDIA (foto o video) ---
+function MediaPreviewItem({ item, size = 90, onRemove }: { item: any, size?: number, onRemove: () => void }) {
+  const [thumbError, setThumbError] = React.useState(false);
+  const uri = typeof item === 'string' ? item : (item && item.uri ? item.uri : undefined);
+  if (!uri) return null;
+  return (
+    <View style={{ marginRight: 8, position: 'relative' }}>
+      {item.thumbnail ? (
+        <View style={{ position: 'relative' }}>
+          <Image source={{ uri: item.thumbnail }} style={{ width: size, height: size, borderRadius: 10 }} />
+          {item.duration && (
+            <View style={{ position: 'absolute', bottom: 4, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1 }}>
+              <Text style={{ color: '#fff', fontSize: size === 90 ? 12 : 10 }}>{item.duration}s</Text>
+            </View>
+          )}
+        </View>
+      ) : (
+        <View style={{ width: size, height: size, borderRadius: 10, backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' }}>
+          {isVideo(uri)
+            ? isCloudinary(uri)
+              ? thumbError
+                ? <Text style={{ fontSize: size === 90 ? 32 : 40 }}>🎥</Text>
+                : <Image source={{ uri: getVideoThumbnail(uri) }} style={{ width: size === 90 ? 32 : 40, height: size === 90 ? 32 : 40 }} onError={() => setThumbError(true)} />
+              : <Text style={{ fontSize: size === 90 ? 32 : 40 }}>🎥</Text>
+            : <Image source={{ uri }} style={{ width: size, height: size, borderRadius: 10 }} />
+          }
+        </View>
+      )}
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 2, right: 2, backgroundColor: '#FFF', borderRadius: 10, paddingHorizontal: size === 90 ? 5 : 6, paddingVertical: size === 90 ? 2 : 2, zIndex: 10, elevation: 4 }}
+        onPress={onRemove}
+      >
+        <Text style={{ fontWeight: 'bold', fontSize: size === 90 ? 17 : 20, color: '#D32F2F', lineHeight: size === 90 ? 17 : 20 }}>×</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function CargarRecetaWizard() {
+  // Log global al montar el componente
+  console.log('== CARGAR RECETA MODAL MONTADO ==');
   const params = useLocalSearchParams();
   const [step, setStep] = useState<Step>('titulo');
   const [loading, setLoading] = useState(false);
@@ -184,8 +228,8 @@ export default function CargarRecetaWizard() {
 
   // Ingredientes y pasos
   const [ingredientes, setIngredientes] = useState([{ nombre: '', cantidad: '', unidad: '' }]);
-  const [pasos, setPasos] = useState([{ descripcion: '', media: null as string | null }]);
-  const [fotoFinal, setFotoFinal] = useState<string | null>(null);
+  const [pasos, setPasos] = useState([{ descripcion: '', media: [] as string[] }]);
+  const [fotoFinal, setFotoFinal] = useState<string[]>([]);
 
   // Modal picker de categorías e ingredientes
   const [allCategories, setAllCategories] = useState<any[]>([]);
@@ -228,10 +272,73 @@ export default function CargarRecetaWizard() {
     getUser();
   }, []);
 
+  // ----------- ENVIAR O MODIFICAR SEGÚN CONTEXTO -----------
+  const handleCargarReceta = () => {
+    console.log('== [handleCargarReceta] recetaId:', recetaId);
+    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
+      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
+      return;
+    }
+    if (!isConnected) {
+      setModalWarning({ visible: true, mensaje: 'No hay conexión a internet. Receta guardada como borrador.' });
+      if (!userAlias) return;
+      const receta = {
+        titulo,
+        descripcion,
+        categoria,
+        porciones,
+        ingredientes,
+        pasos,
+        fotoFinal,
+        ...(recetaId ? { recetaId } : {}), // Guardar recetaId si existe
+      };
+      console.log('== [handleCargarReceta] Guardando borrador:', receta);
+      AsyncStorage.getItem(`pendingRecipes_${userAlias}`).then(data => {
+        let borradores: BorradorReceta[] = data ? JSON.parse(data) : [];
+        // Reemplazar si existe por recetaId o título
+        const idx = borradores.findIndex((b: BorradorReceta) => (receta.recetaId && b.recetaId === receta.recetaId) || (!receta.recetaId && b.titulo === receta.titulo));
+        if (idx !== -1) {
+          borradores[idx] = receta;
+        } else {
+          borradores.push(receta);
+        }
+        AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores)).then(() => {
+          setSuccessDraft(true);
+        });
+      });
+      return;
+    }
+    if (type === 'cellular') {
+      console.log('== [handleCargarReceta] Publicando con datos móviles, recetaId:', recetaId);
+      setShowWifiModal(true);
+      return;
+    }
+    if (recetaId) {
+      console.log('== [handleCargarReceta] Llamando a modificarReceta (PUT), recetaId:', recetaId);
+      modificarReceta();
+    } else {
+      console.log('== [handleCargarReceta] Llamando a enviarReceta (POST), recetaId:', recetaId);
+      enviarReceta();
+    }
+  };
+
+  // --------- CARGA DE BORRADOR: setear recetaId si existe ---------
   useEffect(() => {
     // Si viene un id por params, setearlo
     if (params && params.id) {
       setRecetaId(params.id as string);
+    }
+    // Si se está cargando un borrador desde AsyncStorage
+    if (params && params.borrador) {
+      try {
+        const borrador = JSON.parse(params.borrador as string);
+        if (borrador.recetaId) {
+          console.log('== [useEffect] Cargando borrador, recetaId:', borrador.recetaId);
+          setRecetaId(borrador.recetaId);
+        }
+      } catch (e) {
+        // No es un borrador válido
+      }
     }
   }, [params]);
 
@@ -345,7 +452,10 @@ export default function CargarRecetaWizard() {
         setPorciones(receta.portions ? String(receta.portions) : '');
         setIngredientes(parseIngredientes(receta.ingredients));
         setPasos(parsePasos(receta.stepsList));
-        setFotoFinal(receta.image_url || null);
+        setFotoFinal([
+          ...(receta.image_url ? [receta.image_url] : []),
+          ...(Array.isArray(receta.aditionalMedia) ? receta.aditionalMedia : [])
+        ]);
       }
     } catch {
       setModalError({ visible: true, mensaje: 'No se pudo cargar la receta existente' });
@@ -364,7 +474,7 @@ export default function CargarRecetaWizard() {
   function pasosParaBackend() {
     return pasos.map(p => ({
       description: p.descripcion,      // Cambiá a "texto" si tu backend lo pide, pero usualmente es "description"
-      urls: p.media ? [p.media] : []
+      urls: p.media ? p.media : []
     }));
   }
 
@@ -384,34 +494,43 @@ export default function CargarRecetaWizard() {
       
       console.log('Token encontrado:', token.substring(0, 20) + '...');
 
-      let imageUrl = null;
+      let imageUrls: string[] = [];
 
-      if (fotoFinal) {
-        console.log('Subiendo foto final a Cloudinary...');
-        imageUrl = await uploadMediaToCloudinary(fotoFinal);
-        console.log('Foto final subida:', imageUrl);
+      if (fotoFinal && fotoFinal.length > 0) {
+        for (const item of fotoFinal) {
+          const uri = typeof item === 'string' ? item : (item && item.uri ? item.uri : undefined);
+          if (!uri) continue;
+          if (uri.startsWith('file')) {
+            const url = await uploadMediaToCloudinary(uri);
+            imageUrls.push(url);
+          } else {
+            imageUrls.push(uri);
+          }
+        }
       }
 
       console.log('Procesando pasos con imágenes...');
       const pasosConImagenes = await Promise.all(
         pasos.map(async (p, index) => {
-          let url = p.media;
-          console.log(`Paso ${index + 1}:`, p.descripcion.substring(0, 30) + '...');
-
-          if (p.media && p.media.startsWith('file')) {
-            try {
-              console.log(`Subiendo media del paso ${index + 1}...`);
-              url = await uploadMediaToCloudinary(p.media);
-              console.log(`Media del paso ${index + 1} subida:`, url);
-            } catch (e) {
-              console.error('Error al subir imagen de paso:', e);
-              throw new Error('Error al subir una imagen de paso');
+          let urls: string[] = [];
+          for (const item of p.media || []) {
+            const uri = typeof item === 'string' ? item : (item && item.uri ? item.uri : undefined);
+            if (!uri) continue;
+            if (uri.startsWith('file')) {
+              try {
+                const url = await uploadMediaToCloudinary(uri);
+                urls.push(url);
+              } catch (e) {
+                console.error('Error al subir media de paso:', e);
+                throw new Error('Error al subir una imagen o video de paso');
+              }
+            } else {
+              urls.push(uri);
             }
           }
-
           return {
             description: p.descripcion,
-            urls: url ? [url] : [],
+            urls,
           };
         })
       );
@@ -425,8 +544,8 @@ export default function CargarRecetaWizard() {
         portions: porciones,
         ingredients: ingredientesParaBackend(),
         stepsList: pasosConImagenes,
-        aditionalMedia: [],
-        image_url: imageUrl,
+        aditionalMedia: imageUrls.length > 1 ? imageUrls.slice(1) : [],
+        image_url: imageUrls[0] || null,
         isVerificated: false,
       };
 
@@ -437,7 +556,7 @@ export default function CargarRecetaWizard() {
       // Detectar si hay videos en la receta
       const hasVideos = pasosConImagenes.some(paso => 
         paso.urls.some(url => url && ['mp4', 'mov', 'avi', 'webm', 'mkv'].some(ext => url.includes(ext)))
-      ) || (imageUrl && ['mp4', 'mov', 'avi', 'webm', 'mkv'].some(ext => imageUrl.includes(ext)));
+      ) || (imageUrls.some(url => url && ['mp4', 'mov', 'avi', 'webm', 'mkv'].some(ext => url.includes(ext))) || imageUrls.length === 0);
       
       const backendTimeout = hasVideos ? 90000 : 30000; // 90 segundos para videos, 30 para imágenes
       console.log('Timeout para backend:', backendTimeout + 'ms');
@@ -487,8 +606,8 @@ export default function CargarRecetaWizard() {
         setCategoria('');
         setPorciones('');
         setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
-        setPasos([{ descripcion: '', media: null }]);
-        setFotoFinal(null);
+        setPasos([{ descripcion: '', media: [] }]);
+        setFotoFinal([]);
 
       } catch (error) {
         clearTimeout(timeoutId);
@@ -509,6 +628,7 @@ export default function CargarRecetaWizard() {
 
   // --------- MODIFICAR RECETA EXISTENTE (PUT) ---------
 const modificarReceta = async () => {
+  console.log('== [modificarReceta] recetaId:', recetaId);
   if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
     setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
     return;
@@ -524,28 +644,42 @@ const modificarReceta = async () => {
     if (!token) throw new Error('Token no encontrado');
 
     // 1. Subir imagen final si es local
-    let imageUrl = fotoFinal;
-    if (fotoFinal && fotoFinal.startsWith('file')) {
-      imageUrl = await uploadMediaToCloudinary(fotoFinal);
+    let imageUrls: string[] = [];
+    if (fotoFinal && fotoFinal.length > 0) {
+      for (const item of fotoFinal) {
+        const uri = typeof item === 'string' ? item : (item && item.uri ? item.uri : undefined);
+        if (!uri) continue;
+        if (uri.startsWith('file')) {
+          const url = await uploadMediaToCloudinary(uri);
+          imageUrls.push(url);
+        } else {
+          imageUrls.push(uri);
+        }
+      }
     }
 
     // 2. Subir imágenes de pasos si son locales
     const pasosConImagenes = await Promise.all(
       pasos.map(async (p) => {
-        let url = p.media;
-
-        if (p.media && p.media.startsWith('file')) {
-          try {
-            url = await uploadMediaToCloudinary(p.media);
-          } catch (e) {
-            console.error('Error al subir imagen de paso:', e);
-            throw new Error('Error al subir una imagen de paso');
+        let urls: string[] = [];
+        for (const item of p.media || []) {
+          const uri = typeof item === 'string' ? item : (item && item.uri ? item.uri : undefined);
+          if (!uri) continue;
+          if (uri.startsWith('file')) {
+            try {
+              const url = await uploadMediaToCloudinary(uri);
+              urls.push(url);
+            } catch (e) {
+              console.error('Error al subir media de paso:', e);
+              throw new Error('Error al subir una imagen o video de paso');
+            }
+          } else {
+            urls.push(uri);
           }
         }
-
         return {
           description: p.descripcion,
-          urls: url ? [url] : [],
+          urls,
         };
       })
     );
@@ -558,11 +692,12 @@ const modificarReceta = async () => {
       portions: porciones,
       ingredients: ingredientesParaBackend(),
       stepsList: pasosConImagenes,
-      aditionalMedia: [],
-      image_url: imageUrl,
+      aditionalMedia: imageUrls.length > 1 ? imageUrls.slice(1) : [],
+      image_url: imageUrls[0] || null,
       isVerificated: false,
     };
 
+    console.log('== BODY QUE SE ENVÍA AL MODIFICAR RECETA ==', JSON.stringify(body, null, 2));
     const res = await fetch(`https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`, {
       method: 'PUT',
       headers: {
@@ -580,8 +715,8 @@ const modificarReceta = async () => {
     setCategoria('');
     setPorciones('');
     setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
-    setPasos([{ descripcion: '', media: null }]);
-    setFotoFinal(null);
+    setPasos([{ descripcion: '', media: [] }]);
+    setFotoFinal([]);
 
   } catch (err: any) {
     setModalError({ visible: true, mensaje: err.message || 'No se pudo modificar la receta' });
@@ -591,49 +726,7 @@ const modificarReceta = async () => {
 
 
   // ----------- ENVIAR O MODIFICAR SEGÚN CONTEXTO -----------
-  const handleCargarReceta = () => {
-    if (!descripcion.trim() || !categoria.trim() || !porciones.trim() || !titulo.trim()) {
-      setModalError({ visible: true, mensaje: 'Faltan campos obligatorios' });
-      return;
-    }
-    if (!isConnected) {
-      setModalWarning({ visible: true, mensaje: 'No hay conexión a internet. Receta guardada como borrador.' });
-      if (!userAlias) return;
-      const receta = {
-        titulo,
-        descripcion,
-        categoria,
-        porciones,
-        ingredientes,
-        pasos,
-        fotoFinal,
-        ...(recetaId ? { recetaId } : {}), // Guardar recetaId si existe
-      };
-      AsyncStorage.getItem(`pendingRecipes_${userAlias}`).then(data => {
-        let borradores: BorradorReceta[] = data ? JSON.parse(data) : [];
-        // Reemplazar si existe por recetaId o título
-        const idx = borradores.findIndex((b: BorradorReceta) => (receta.recetaId && b.recetaId === receta.recetaId) || (!receta.recetaId && b.titulo === receta.titulo));
-        if (idx !== -1) {
-          borradores[idx] = receta;
-        } else {
-          borradores.push(receta);
-        }
-        AsyncStorage.setItem(`pendingRecipes_${userAlias}`, JSON.stringify(borradores)).then(() => {
-          setSuccessDraft(true);
-        });
-      });
-      return;
-    }
-    if (type === 'cellular') {
-      setShowWifiModal(true);
-      return;
-    }
-    if (recetaId) {
-      modificarReceta();
-    } else {
-      enviarReceta();
-    }
-  };
+  // Eliminar la segunda declaración duplicada de handleCargarReceta (deja solo la primera, con logs y lógica mejorada)
 
   // ----------- UI -----------
 
@@ -671,6 +764,8 @@ const modificarReceta = async () => {
     );
   };
 
+  // Cambiar el máximo de media
+  const MAX_MEDIA = 3;
   // En la selección de media para pasos:
   const handlePickMediaPaso = async (index: number) => {
     setLoadingPicker(`paso-${index}`);
@@ -680,28 +775,48 @@ const modificarReceta = async () => {
         setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
         return;
       }
+      const actuales = pasos[index].media?.length || 0;
+      if (actuales >= MAX_MEDIA) {
+        setModalError({ visible: true, mensaje: `Máximo ${MAX_MEDIA} archivos por paso.` });
+        return;
+      }
+      const disponibles = MAX_MEDIA - actuales;
       const resultado = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
         quality: 0.8,
-        base64: false
+        base64: false,
+        allowsMultipleSelection: true
       });
       if (!resultado.canceled && resultado.assets.length > 0) {
-        const asset = resultado.assets[0];
-        if (asset.type === 'video') {
-          let durationSec = asset.duration;
-          if (typeof durationSec === 'number') {
-            if (durationSec > 100) durationSec = durationSec / 1000;
-            if (durationSec > 25) {
-              setModalError({ visible: true, mensaje: 'El video seleccionado dura más de 25 segundos. Por favor, elige uno más corto.' });
-              return;
+        let nuevasMedias: any[] = [];
+        for (const asset of resultado.assets) {
+          if (asset.type === 'video') {
+            let durationSec = asset.duration;
+            if (typeof durationSec === 'number') {
+              if (durationSec > 100) durationSec = durationSec / 1000;
+              if (durationSec > 25) {
+                setModalError({ visible: true, mensaje: 'El video seleccionado dura más de 25 segundos. Por favor, elige uno más corto.' });
+                continue;
+              }
+            } else {
+              setModalWarning({ visible: true, mensaje: 'No se pudo verificar la duración del video. Por favor, asegúrate de que dure menos de 25 segundos.' });
+            }
+            try {
+              const { uri: thumbnail } = await VideoThumbnails.getThumbnailAsync(asset.uri, { time: 1000 });
+              nuevasMedias.push({ uri: asset.uri, thumbnail, duration: durationSec ? Math.round(durationSec) : undefined });
+            } catch (e) {
+              nuevasMedias.push({ uri: asset.uri, duration: durationSec ? Math.round(durationSec) : undefined });
             }
           } else {
-            setModalWarning({ visible: true, mensaje: 'No se pudo verificar la duración del video. Por favor, asegúrate de que dure menos de 25 segundos.' });
+            nuevasMedias.push({ uri: asset.uri });
           }
         }
+        if (nuevasMedias.length > disponibles) {
+          setModalWarning({ visible: true, mensaje: `Seleccionaste ${nuevasMedias.length} archivos, solo se agregarán los primeros ${disponibles}.` });
+        }
+        nuevasMedias = nuevasMedias.slice(0, disponibles);
         const nuevos = [...pasos];
-        nuevos[index].media = asset.uri;
+        nuevos[index].media = [...(nuevos[index].media || []), ...nuevasMedias];
         setPasos(nuevos);
       }
     } finally {
@@ -718,27 +833,41 @@ const modificarReceta = async () => {
         setModalError({ visible: true, mensaje: 'Permiso denegado para galería' });
         return;
       }
+      const actuales = fotoFinal.length;
+      if (actuales >= MAX_MEDIA) {
+        setModalError({ visible: true, mensaje: `Máximo ${MAX_MEDIA} archivos en la foto final.` });
+        return;
+      }
+      const disponibles = MAX_MEDIA - actuales;
       const resultado = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
         quality: 0.8,
-        base64: false
+        base64: false,
+        allowsMultipleSelection: true
       });
       if (!resultado.canceled && resultado.assets.length > 0) {
-        const asset = resultado.assets[0];
-        if (asset.type === 'video') {
-          let durationSec = asset.duration;
-          if (typeof durationSec === 'number') {
-            if (durationSec > 100) durationSec = durationSec / 1000;
-            if (durationSec > 25) {
-              setModalError({ visible: true, mensaje: 'El video seleccionado dura más de 25 segundos. Por favor, elige uno más corto.' });
-              return;
+        let nuevasMedias: any[] = [];
+        for (const asset of resultado.assets) {
+          if (asset.type === 'video') {
+            let durationSec = asset.duration;
+            if (typeof durationSec === 'number') {
+              if (durationSec > 100) durationSec = durationSec / 1000;
+            }
+            try {
+              const { uri: thumbnail } = await VideoThumbnails.getThumbnailAsync(asset.uri, { time: 1000 });
+              nuevasMedias.push({ uri: asset.uri, thumbnail, duration: durationSec ? Math.round(durationSec) : undefined });
+            } catch (e) {
+              nuevasMedias.push({ uri: asset.uri, duration: durationSec ? Math.round(durationSec) : undefined });
             }
           } else {
-            setModalWarning({ visible: true, mensaje: 'No se pudo verificar la duración del video. Por favor, asegúrate de que dure menos de 25 segundos.' });
+            nuevasMedias.push({ uri: asset.uri });
           }
         }
-        setFotoFinal(asset.uri);
+        if (nuevasMedias.length > disponibles) {
+          setModalWarning({ visible: true, mensaje: `Seleccionaste ${nuevasMedias.length} archivos, solo se agregarán los primeros ${disponibles}.` });
+        }
+        nuevasMedias = nuevasMedias.slice(0, disponibles);
+        setFotoFinal(prev => [...prev, ...nuevasMedias]);
       }
     } finally {
       setLoadingPicker(false);
@@ -779,8 +908,8 @@ const modificarReceta = async () => {
               setCategoria('');
               setPorciones('');
               setIngredientes([{ nombre: '', cantidad: '', unidad: '' }]);
-              setPasos([{ descripcion: '', media: null }]);
-              setFotoFinal(null);
+              setPasos([{ descripcion: '', media: [] }]);
+              setFotoFinal([]);
               setStep('formulario');
             }
           }}
@@ -818,6 +947,7 @@ const modificarReceta = async () => {
   }
 
   if (step === 'conflicto') {
+    console.log('== RENDER PASO CONFLICTO ==');
     return (
       <View style={styles.fullScreen}>
         <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
@@ -829,9 +959,28 @@ const modificarReceta = async () => {
           <TouchableOpacity
             style={[styles.conflictBtn, { marginRight: 10 }]}
             onPress={async () => {
+              console.log('== CLICK EN BOTÓN EDITAR LA EXISTENTE ==');
               // Refuerzo: setear recetaId explícitamente antes de obtener datos
               const existe = await validarTitulo(titulo);
               if (existe && recetaId) {
+                console.log('== CLIC EN EDITAR LA EXISTENTE ==');
+                // Trae la receta y loguea los datos crudos
+                const url = `https://bon-appetit-production.up.railway.app/api/recipies/${recetaId}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                console.log('DATA CRUDA DE LA RECETA:', data);
+                if (Array.isArray(data.payload) && data.payload.length > 0) {
+                  const receta = data.payload[0];
+                  console.log('RECETA OBTENIDA:', receta);
+                  console.log('image_url:', receta.image_url);
+                  console.log('aditionalMedia:', receta.aditionalMedia);
+                  console.log('stepsList:', receta.stepsList);
+                  if (receta.stepsList && receta.stepsList.length > 0) {
+                    (receta.stepsList as any[]).forEach((step: any, idx: number) => {
+                      console.log(`Paso ${idx + 1}:`, step);
+                    });
+                  }
+                }
                 await obtenerRecetaExistente();
                 setStep('formulario');
               } else {
@@ -886,16 +1035,16 @@ const modificarReceta = async () => {
       {errores.titulo && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
       <Text style={styles.label}>
-        Descripción general
+        Descripción general <Text style={{ color: 'red' }}>*</Text>
       </Text>
       <TextInput
-        style={styles.textarea}
+        style={[styles.textarea, errores.descripcion && { borderColor: 'red' }]}
         value={descripcion}
         onChangeText={setDescripcion}
         placeholder="Ej: Masa crocante, salsa de tomate y queso derretido..."
         multiline
       />
-      {/* No error para descripción */}
+      {errores.descripcion && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
 
       {/* ----------- Picker de Categoría ----------- */}
       <Text style={styles.label}>
@@ -984,7 +1133,7 @@ const modificarReceta = async () => {
         Pasos <Text style={{ color: 'red' }}>*</Text>
       </Text>
       {pasos.map((paso, index) => (
-        <View key={index} style={{ marginBottom: 8 }}>
+        <View key={index} style={{ marginBottom: 19 , marginTop:2}}>
           <TextInput
             style={[styles.textarea, errores.pasos[index] && { borderColor: 'red' }]}
             placeholder={`Paso ${index + 1}`}
@@ -997,74 +1146,31 @@ const modificarReceta = async () => {
             multiline
           />
           {errores.pasos[index] && <Text style={styles.errorText}>Este campo es obligatorio</Text>}
-          {/* FOTO POR PASO */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => handlePickMediaPaso(index)}
-          >
-            <Text style={styles.addButtonText}>
-              {paso.media ? 'Cambiar foto o video del paso' : 'Agregar foto o video del paso'}
-            </Text>
-          </TouchableOpacity>
-          {paso.media && (
-            <View style={{ alignSelf: 'center', marginBottom: 8, position: 'relative', width: 90, height: 90 }}>
-              {/* Loader solo si está cargando y ya hay media seleccionada */}
-              {loadingPicker === `paso-${index}` && (
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 10 }}>
-                  <ActivityIndicator size="large" color="#F59C1D" />
-                </View>
-              )}
-              {/* Imagen/video o fallback */}
-              <Image
-                source={{ uri: paso.media }}
-                style={{ width: 90, height: 90, borderRadius: 10 }}
-                onError={() => {
-                  // Si hay error al cargar la imagen/video, mostrar recuadro
+          {/* Botón para agregar más media */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <TouchableOpacity
+              style={styles.addMediaButton}
+              onPress={() => handlePickMediaPaso(index)}
+            >
+              <Text style={styles.addButtonText}>Agregar foto o video del paso</Text>
+            </TouchableOpacity>
+            <Text style={{ marginLeft: 8, color: '#666', fontSize: 13 }}>(máximo 3)</Text>
+          </View>
+          {/* Galería de media del paso */}
+          <ScrollView horizontal style={{ flexDirection: 'row', marginVertical: 6 }}>
+            {paso.media && paso.media.map((item, mIdx) => (
+              <MediaPreviewItem
+                key={mIdx}
+                item={item}
+                size={90}
+                onRemove={() => {
                   const nuevos = [...pasos];
-                  nuevos[index].mediaError = true;
+                  nuevos[index].media = nuevos[index].media.filter((_, i) => i !== mIdx);
                   setPasos(nuevos);
                 }}
               />
-              {paso.mediaError && (
-                <View style={{ 
-                  position: 'absolute', 
-                  top: 0, 
-                  left: 0, 
-                  width: 90, 
-                  height: 90, 
-                  borderRadius: 10, 
-                  backgroundColor: '#f0f0f0', 
-                  justifyContent: 'center', 
-                  alignItems: 'center' 
-                }}>
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 24 }}>🎥</Text>
-                    <Text style={{ fontSize: 10, color: '#666' }}>Video</Text>
-                  </View>
-                </View>
-              )}
-              <TouchableOpacity
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  backgroundColor: '#FFF',
-                  borderRadius: 10,
-                  paddingHorizontal: 5,
-                  paddingVertical: 2,
-                  zIndex: 10,
-                  elevation: 4,
-                }}
-                onPress={() => {
-                  const nuevos = [...pasos];
-                  nuevos[index].media = null;
-                  setPasos(nuevos);
-                }}
-              >
-                <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#D32F2F', lineHeight: 17 }}>×</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+            ))}
+          </ScrollView>
           {index > 0 && (
             <TouchableOpacity
               onPress={() => setPasos(pasos.filter((_, i) => i !== index))}
@@ -1076,50 +1182,35 @@ const modificarReceta = async () => {
         </View>
       ))}
       <TouchableOpacity
-        onPress={() => setPasos([...pasos, { descripcion: '', media: null }])}
+        onPress={() => setPasos([...pasos, { descripcion: '', media: [] }])}
         style={styles.addButton}
       >
         <Text style={styles.addButtonText}>Agregar paso</Text>
       </TouchableOpacity>
 
       {/* Foto final */}
-      <Text style={styles.label}>Foto final (opcional)</Text>
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handlePickMediaFinal}
-      >
-        <Text style={styles.addButtonText}>{fotoFinal ? 'Cambiar foto o video' : 'Agregar foto o video'}</Text>
-      </TouchableOpacity>
-      {fotoFinal && (
-        <View style={{ alignSelf: 'center', marginBottom: 50, position: 'relative', width: 90, height: 90 }}>
-          {loadingPicker === 'final' && (
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 10 }}>
-              <ActivityIndicator size="large" color="#F59C1D" />
-            </View>
-          )}
-          {/* Imagen/video o fallback */}
-          <Image
-            source={{ uri: fotoFinal }}
-            style={{ width: 120, height: 120, borderRadius: 12 }}
+      <Text style={styles.label}>Foto final</Text>
+      {/* Botón para agregar más media */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+        <TouchableOpacity
+          style={styles.addMediaButton}
+          onPress={handlePickMediaFinal}
+        >
+          <Text style={styles.addButtonText}>Agregar foto o video</Text>
+        </TouchableOpacity>
+        <Text style={{ marginLeft: 8, color: '#666', fontSize: 13 }}>(máximo 3)</Text>
+      </View>
+      {/* Galería de media final */}
+      <ScrollView horizontal style={{ flexDirection: 'row', marginVertical: 6 }}>
+        {fotoFinal.map((item, idx) => (
+          <MediaPreviewItem
+            key={idx}
+            item={item}
+            size={120}
+            onRemove={() => setFotoFinal(fotoFinal.filter((_, i) => i !== idx))}
           />
-          <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 2,
-              right: 2,
-              backgroundColor: '#FFF',
-              borderRadius: 12,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-              zIndex: 10,
-              elevation: 4,
-            }}
-            onPress={() => setFotoFinal(null)}
-          >
-            <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#D32F2F', lineHeight: 20 }}>×</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        ))}
+      </ScrollView>
       {loadingPicker && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.6)' }}>
           <ActivityIndicator size="large" color="#F59C1D" />
@@ -1227,10 +1318,16 @@ const modificarReceta = async () => {
       <PublishRecipeNoWifiModal
         visible={showWifiModal}
         onPublishWithMobile={async () => {
-          console.log('=== PUBLICANDO CON DATOS MÓVILES ===');
+          console.log('=== PUBLICANDO CON DATOS MÓVILES === recetaId:', recetaId);
           setShowWifiModal(false);
           try {
-            await enviarReceta();
+            if (recetaId) {
+              console.log('Llamando a modificarReceta (PUT), recetaId:', recetaId);
+              await modificarReceta();
+            } else {
+              console.log('Llamando a enviarReceta (POST), recetaId:', recetaId);
+              await enviarReceta();
+            }
             setModalExito(true);
           } catch (error) {
             console.error('Error publicando con datos móviles:', error);
@@ -1253,6 +1350,7 @@ const modificarReceta = async () => {
             fotoFinal,
             ...(recetaId ? { recetaId } : {}), // Guardar recetaId si existe
           };
+          console.log('GUARDANDO BORRADOR', { recetaId, fotoFinal, pasos });
           const data = await AsyncStorage.getItem(`pendingRecipes_${userAlias}`);
           let borradores: BorradorReceta[] = data ? JSON.parse(data) : [];
           // Reemplazar si existe por recetaId o título
@@ -1359,14 +1457,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addButton: {
-    backgroundColor: '#EEE',
+    borderWidth: 1,
+    borderColor: '#CCC',
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 10,
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    marginBottom: 12,
+    marginVertical: 10,
+    backgroundColor: 'rgba(2, 94, 69, 0.10)', // Verde traslúcido
   },
   addButtonText: {
     fontWeight: 'bold',
@@ -1421,5 +1518,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
     marginLeft: 2,
+  },
+  addMediaButton: {
+    backgroundColor: '#EEE',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 0,
+    marginBottom: 1
   },
 });

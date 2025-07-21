@@ -87,10 +87,30 @@ export default function BorradoresScreen() {
 
       // 1. Subir foto final si es local (startsWith file)
       let imageUrl = null;
-      if (receta.fotoFinal && receta.fotoFinal.startsWith('file')) {
-        imageUrl = await uploadImageToCloudinary(receta.fotoFinal);
+      let fotoFinal = receta.fotoFinal;
+      // Si es array, tomá el primer elemento (como string o como objeto con uri)
+      if (Array.isArray(fotoFinal)) {
+        if (fotoFinal.length > 0) {
+          if (typeof fotoFinal[0] === 'object' && fotoFinal[0] !== null) {
+            fotoFinal = fotoFinal[0].uri;
+          } else {
+            fotoFinal = fotoFinal[0];
+          }
+        } else {
+          fotoFinal = null;
+        }
+      }
+      // Solo si es string y no undefined/null
+      if (typeof fotoFinal === 'string' && fotoFinal.startsWith('file')) {
+        try {
+          imageUrl = await uploadImageToCloudinary(fotoFinal);
+        } catch (e) {
+          setModalError({ visible: true, mensaje: 'La imagen seleccionada ya no está disponible en tu dispositivo. Por favor, vuelve a seleccionarla antes de publicar.' });
+          setPublicando(null);
+          return;
+        }
       } else {
-        imageUrl = receta.fotoFinal || null;
+        imageUrl = fotoFinal || null;
       }
 
       // 2. Subir imágenes de pasos si son locales
