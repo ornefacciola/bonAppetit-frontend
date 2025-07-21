@@ -19,11 +19,6 @@
         "foregroundImage": "./assets/images/bon-appetit-smaller.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdge": true,
-      "navigationBar": {
-        "visible": "auto",         
-        "barStyle": "light-content" 
-      },
       "package": "com.juanirios.bonAppettitFrontend",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
@@ -40,11 +35,12 @@
       [
         "expo-splash-screen",
         {
-          "image":  "./assets/images/bon-appetit-smaller.png",
+          "image": "./assets/images/bon-appetit-smaller.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
